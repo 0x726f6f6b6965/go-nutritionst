@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  fastapi-app:
+    image: fastapi-app:latest
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - PORT=${PORT}
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:17.5
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  db-migrate:
+    image: migrate/migrate:v4.18.3
+    container_name: migration-instance
+    environment:
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+      - PGUSER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./migration:/migration:ro
+    depends_on:
+      db:
+        condition: "service_healthy"
+    command: [ "-path", "/migration", "-database", "postgres://db:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable", "-verbose", "goto", "1" ]

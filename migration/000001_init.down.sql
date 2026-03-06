@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS meal_history;
+
+DROP TABLE IF EXISTS users;
+
+DROP TABLE IF EXISTS send_requests;
+
+DROP TABLE IF EXISTS meal_daily;

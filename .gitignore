@@ -1,0 +1,5 @@
+.env
+.vscode/launch.json
+deployment/infra/.terraform
+deployment/infra/.terraform.*
+deployment/infra/terraform.*
