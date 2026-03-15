@@ -49,6 +49,12 @@ variable "channel_access_token" {
   sensitive   = true
 }
 
+variable "max_daily_token" {
+  description = "The max daily token"
+  type        = string
+  default     = "120000"
+}
+
 variable "db_tier" {
   description = "Machine type for the Cloud SQL instance."
   type        = string

@@ -12,6 +12,10 @@ resource "google_cloud_run_v2_service" "default" {
         container_port = 8080 # For FastAPI
       }
       env {
+        name  = "MAX_DAILY_TOKEN"
+        value = var.max_daily_token
+      }
+      env {
         name  = "CHANNEL_ACCESS_TOKEN"
         value = var.channel_access_token
       }

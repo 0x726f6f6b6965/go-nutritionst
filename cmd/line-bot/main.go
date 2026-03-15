@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage"
 	v2 "github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt/v2"
@@ -15,6 +16,22 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	dbHost string
+	dbPort string
+	dbUser string
+	dbPwd  string
+	dbName string
+
+	channelSecret string
+	channelToken  string
+	openaiKey     string
+
+	maxDailyToken int64
+
+	port string
+)
+
 func main() {
 	// logger
 	logger, err := zap.NewDevelopment(zap.AddStacktrace(zap.ErrorLevel))
@@ -22,17 +39,9 @@ func main() {
 		log.Fatal(err)
 	}
 	defer logger.Sync()
+	initVar(logger)
 
-	dbHost := os.Getenv("POSTGRES_HOST")
-	dbPort := os.Getenv("POSTGRES_PORT")
-	dbUser := os.Getenv("POSTGRES_USER")
-	dbPwd := os.Getenv("POSTGRES_PASSWORD")
-	dbName := os.Getenv("POSTGRES_DB")
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPwd, dbHost, dbPort, dbName)
-
-	channelSecret := os.Getenv("CHANNEL_SECRET")
-	channelToken := os.Getenv("CHANNEL_ACCESS_TOKEN")
-	openaiKey := os.Getenv("OPENAI_API_KEY")
 
 	if channelSecret == "" || channelToken == "" || openaiKey == "" {
 		logger.Fatal("CHANNEL_SECRET, CHANNEL_ACCESS_TOKEN, OPENAI_API_KEY must be set")
@@ -54,7 +63,7 @@ func main() {
 	// Bot Service
 	botService, err := bot.NewService(channelToken, store, gptClient,
 		bot.WithLogger(logger),
-		bot.WithMaxDailyToken(1000000))
+		bot.WithMaxDailyToken(maxDailyToken))
 	if err != nil {
 		logger.Error("Failed to initialize bot service", zap.Error(err))
 	}
@@ -78,13 +87,34 @@ func main() {
 		}
 	})
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
 	logger.Info("Listening on :%s", zap.String("port", port))
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		logger.Fatal("ListenAndServe error", zap.Error(err))
+	}
+}
+
+func initVar(logger *zap.Logger) {
+	dbHost = os.Getenv("POSTGRES_HOST")
+	dbPort = os.Getenv("POSTGRES_PORT")
+	dbUser = os.Getenv("POSTGRES_USER")
+	dbPwd = os.Getenv("POSTGRES_PASSWORD")
+	dbName = os.Getenv("POSTGRES_DB")
+
+	channelSecret = os.Getenv("CHANNEL_SECRET")
+	channelToken = os.Getenv("CHANNEL_ACCESS_TOKEN")
+	openaiKey = os.Getenv("OPENAI_API_KEY")
+
+	var err error
+	maxDailyToken, err = strconv.ParseInt(os.Getenv("MAX_DAILY_TOKEN"), 10, 64)
+	if err != nil {
+		logger.Info("parse env MAX_DAILY_TOKEN error, use default value",
+			zap.Int64("default", bot.DefaultMaxDailyToken),
+			zap.Error(err))
+		maxDailyToken = bot.DefaultMaxDailyToken
+	}
+
+	port = os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
 }

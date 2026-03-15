@@ -67,6 +67,7 @@ func NewService(channelToken string, store *storage.Postgres, gpt gpt.NutritionA
 			return nil, err
 		}
 	}
+	s.logger.Info("Service initialized", zap.Int64("maxDailyToken", s.maxDailyToken))
 	return s, nil
 }
 
