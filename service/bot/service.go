@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	internalErrors "github.com/0x726f6f6b6965/go-nutritionst/internal/errors"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/template"
@@ -22,20 +23,23 @@ import (
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
+const (
+	DefaultMaxDailyToken int64 = 120000
+)
+
 type Service struct {
 	lineClient         *messaging_api.MessagingApiAPI
 	blobClient         *messaging_api.MessagingApiBlobAPI
 	store              *storage.Postgres
 	cache              *cache.UserContext
-	gpt                *gpt.Client
+	gpt                gpt.NutritionAPI
 	logger             *zap.Logger
-	AnalyzeMealFn      func(ctx context.Context, uid uuid.UUID, userID string, mealInfo *gpt.MealInfoWithImage, s *Service) error
-	AnalyzeMealDailyFn func(ctx context.Context, uid uuid.UUID, userID string, dailyInfo *gpt.DailyInfo, s *Service) error
+	maxDailyToken      int64
+	AnalyzeMealFn      func(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, mealInfo *gpt.MealInfoWithImage, s *Service) error
+	AnalyzeMealDailyFn func(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, dailyInfo *gpt.DailyInfo, s *Service) error
 }
 
-func NewService(channelToken string, store *storage.Postgres, gpt *gpt.Client,
-	analyzeMealFn func(ctx context.Context, uid uuid.UUID, userID string, mealInfo *gpt.MealInfoWithImage, s *Service) error,
-	analyzeMealDailyFn func(ctx context.Context, uid uuid.UUID, userID string, dailyInfo *gpt.DailyInfo, s *Service) error, logger *zap.Logger) (*Service, error) {
+func NewService(channelToken string, store *storage.Postgres, gpt gpt.NutritionAPI, opts ...Option) (*Service, error) {
 	client, err := messaging_api.NewMessagingApiAPI(channelToken)
 	if err != nil {
 		return nil, err
@@ -45,16 +49,25 @@ func NewService(channelToken string, store *storage.Postgres, gpt *gpt.Client,
 		return nil, err
 	}
 
-	return &Service{
-		lineClient:         client,
-		blobClient:         blobClient,
-		store:              store,
-		cache:              cache.NewUserContext(),
-		gpt:                gpt,
-		AnalyzeMealFn:      analyzeMealFn,
-		AnalyzeMealDailyFn: analyzeMealDailyFn,
-		logger:             logger,
-	}, nil
+	s := &Service{
+		lineClient: client,
+		blobClient: blobClient,
+		store:      store,
+		cache:      cache.NewUserContext(),
+		gpt:        gpt,
+		// can be override by option
+		AnalyzeMealFn:      AnalyzeMeal,
+		AnalyzeMealDailyFn: AnalyzeDailyMeal,
+		maxDailyToken:      DefaultMaxDailyToken,
+		logger:             zap.NewNop(),
+	}
+
+	for _, opt := range opts {
+		if err := opt(s); err != nil {
+			return nil, err
+		}
+	}
+	return s, nil
 }
 
 func (s *Service) HandleEvent(ctx context.Context, event *linebot.Event) error {
@@ -79,7 +92,7 @@ func (s *Service) handleTextMessage(ctx context.Context, event *linebot.Event, m
 	user, err := s.getUserInfo(ctx, userID)
 	if err != nil {
 		s.logger.Error("Error getting user info", zap.Error(err))
-		return err
+		return s.replyText(ctx, event.ReplyToken, internalErrors.ErrFaiedToGetUser.Error())
 	}
 
 	// Register logic
@@ -115,7 +128,7 @@ func (s *Service) handleImageMessage(ctx context.Context, event *linebot.Event, 
 	user, err := s.getUserInfo(ctx, userID)
 	if err != nil {
 		s.logger.Error("Error getting user info", zap.Error(err))
-		return s.replyText(ctx, event.ReplyToken, "Error getting user info")
+		return s.replyText(ctx, event.ReplyToken, internalErrors.ErrFaiedToGetUser.Error())
 	}
 	// Register logic if user not found
 	if user == nil {
@@ -134,14 +147,14 @@ func (s *Service) handleImageMessage(ctx context.Context, event *linebot.Event, 
 	content, err := s.blobClient.GetMessageContent(message.ID)
 	if err != nil {
 		s.logger.Error("Error getting image content", zap.Error(err))
-		return s.replyText(ctx, event.ReplyToken, "Error getting image content")
+		return s.replyText(ctx, event.ReplyToken, internalErrors.ErrFaiedToGetImage.Error())
 	}
 	defer content.Body.Close()
 
 	imgData, err := io.ReadAll(content.Body)
 	if err != nil {
 		s.logger.Error("Error reading image content", zap.Error(err))
-		return s.replyText(ctx, event.ReplyToken, "Error reading image content")
+		return s.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
 	}
 
 	s.cache.SetPicture(userID, imgData)
@@ -155,7 +168,7 @@ func (s *Service) handleImageMessage(ctx context.Context, event *linebot.Event, 
 		UpdatedAt:   time.Now(),
 	}); err != nil {
 		s.logger.Error("Error creating send request", zap.Error(err))
-		return s.replyText(ctx, event.ReplyToken, "Error creating send request")
+		return s.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
 	}
 
 	mealInfo := &gpt.MealInfoWithImage{
@@ -166,8 +179,21 @@ func (s *Service) handleImageMessage(ctx context.Context, event *linebot.Event, 
 			UserProfile: user.ToProfileString(),
 		},
 	}
+
+	usedToken, err := s.store.GetUsage(ctx, userID)
+	if err != nil {
+		s.logger.Error("Error getting usage", zap.Error(err))
+		return s.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
+	}
+	if time.Since(usedToken.UpdatedAt) > 24*time.Hour {
+		usedToken.Usage = 0
+	}
+	if usedToken.Usage >= s.maxDailyToken {
+		return s.replyText(ctx, event.ReplyToken, internalErrors.ErrOutOfDailyToken.Error())
+	}
+
 	go func() {
-		if err := s.AnalyzeMealFn(ctx, uid, userID, mealInfo, s); err != nil {
+		if err := s.AnalyzeMealFn(ctx, uid, userID, usedToken.Usage, mealInfo, s); err != nil {
 			s.logger.Error("AnalyzeMeal error", zap.Error(err))
 			err = s.store.UpdateSendRequest(ctx, &models.SendRequest{
 				RequestID: uid.String(),
@@ -318,14 +344,24 @@ func getMealName(m int) string {
 	}
 }
 
-func AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, mealInfo *gpt.MealInfoWithImage, s *Service) error {
+func AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, mealInfo *gpt.MealInfoWithImage, s *Service) error {
 	// AI Analysis
 	start := time.Now()
-	aiResp, err := s.gpt.GetMealInfo(ctx, mealInfo)
+	aiResp, usage, err := s.gpt.GetMealInfo(ctx, mealInfo)
+	if usage > 0 {
+		if err := s.store.UpsertUsage(ctx, &models.Usage{
+			LineID:    userID,
+			Usage:     usedToken + usage,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}); err != nil {
+			s.logger.Error("DB Error", zap.Error(err))
+		}
+	}
 	if err != nil {
 		s.logger.Error("AI Error", zap.Error(err))
 		msg := messaging_api.TextMessage{
-			Text: "AI 分析失敗，請稍後再試",
+			Text: internalErrors.ErrFailedToAnalyze.Error(),
 		}
 
 		if sendErr := s.sendMsg(ctx, userID, uid.String(), msg); sendErr != nil {
@@ -337,13 +373,12 @@ func AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, mealInfo *gp
 
 	if !aiResp.IsFood {
 		msg := messaging_api.TextMessage{
-			Text: "這似乎不是餐點的照片，請重新上傳",
+			Text: internalErrors.ErrNotFoodType.Error(),
 		}
-		err := errors.New("this is not a food")
 		sendErr := s.sendMsg(ctx, userID, uid.String(), msg)
 		if sendErr != nil {
 			s.logger.Error("Error sending message", zap.Error(sendErr))
-			err = errors.Join(err, sendErr)
+			err = errors.Join(internalErrors.ErrNotFoodType, sendErr)
 		}
 		return err
 	}
@@ -353,7 +388,7 @@ func AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, mealInfo *gp
 	if err := s.store.CreateMealHistory(ctx, history); err != nil {
 		s.logger.Error("DB Error", zap.Error(err))
 		msg := messaging_api.TextMessage{
-			Text: "儲存失敗，請稍後再試",
+			Text: internalErrors.ErrInternal.Error(),
 		}
 		if sendErr := s.sendMsg(ctx, userID, uid.String(), msg); sendErr != nil {
 			s.logger.Error("Error sending message", zap.Error(sendErr))
@@ -388,14 +423,24 @@ func AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, mealInfo *gp
 	return nil
 }
 
-func AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID string, dailyInfo *gpt.DailyInfo, s *Service) error {
+func AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, dailyInfo *gpt.DailyInfo, s *Service) error {
 	// AI Analysis
 	start := time.Now()
-	aiResp, err := s.gpt.GetMealDailyInfo(ctx, dailyInfo)
+	aiResp, usage, err := s.gpt.GetMealDailyInfo(ctx, dailyInfo)
+	if usage > 0 {
+		if err := s.store.UpsertUsage(ctx, &models.Usage{
+			LineID:    userID,
+			Usage:     usedToken + usage,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}); err != nil {
+			s.logger.Error("DB Error", zap.Error(err))
+		}
+	}
 	if err != nil {
 		s.logger.Error("AI Error", zap.Error(err))
 		msg := messaging_api.TextMessage{
-			Text: "AI 分析失敗，請稍後再試",
+			Text: internalErrors.ErrFailedToAnalyze.Error(),
 		}
 
 		if sendErr := s.sendMsg(ctx, userID, uid.String(), msg); sendErr != nil {
@@ -412,7 +457,7 @@ func AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID string, dailyIn
 	if err := s.store.CreateMealDaily(ctx, history); err != nil {
 		s.logger.Error("DB Error", zap.Error(err))
 		msg := messaging_api.TextMessage{
-			Text: "儲存失敗，請稍後再試",
+			Text: internalErrors.ErrInternal.Error(),
 		}
 		if sendErr := s.sendMsg(ctx, userID, uid.String(), msg); sendErr != nil {
 			s.logger.Error("Error sending message", zap.Error(sendErr))

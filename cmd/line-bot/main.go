@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage"
-	"github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt"
+	v2 "github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt/v2"
 	"github.com/0x726f6f6b6965/go-nutritionst/service/bot"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/line/line-bot-sdk-go/v8/linebot"
@@ -49,10 +49,12 @@ func main() {
 	store := storage.NewPostgres(pool)
 
 	// GPT
-	gptClient := gpt.NewClient(openaiKey)
+	gptClient := v2.NewClient(openaiKey)
 
 	// Bot Service
-	botService, err := bot.NewService(channelToken, store, gptClient, bot.AnalyzeMeal, bot.AnalyzeDailyMeal, logger)
+	botService, err := bot.NewService(channelToken, store, gptClient,
+		bot.WithLogger(logger),
+		bot.WithMaxDailyToken(1000000))
 	if err != nil {
 		logger.Error("Failed to initialize bot service", zap.Error(err))
 	}

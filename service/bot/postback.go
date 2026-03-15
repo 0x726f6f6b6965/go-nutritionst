@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	internalErrors "github.com/0x726f6f6b6965/go-nutritionst/internal/errors"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/query"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/template"
@@ -24,13 +25,13 @@ func (s *Service) setMeal(ctx context.Context, userID string, replyToken string,
 		mealInt, err := strconv.Atoi(datas[0])
 		if err != nil {
 			s.logger.Error("Error parsing meal", zap.Error(err))
-			return s.replyText(ctx, replyToken, "unknown action")
+			return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 		}
 		s.cache.SetMeal(userID, mealInt)
 		mealName := getMealName(mealInt)
 		return s.replyText(ctx, replyToken, fmt.Sprintf("請輸入%s餐點名稱", mealName))
 	}
-	return s.replyText(ctx, replyToken, "unknown action")
+	return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 }
 
 func (s *Service) checkDescript(ctx context.Context, userID string, replyToken string, datas []string) error {
@@ -75,7 +76,7 @@ func (s *Service) checkBasicInfo(ctx context.Context, userID string, replyToken 
 	}
 	if err := s.store.CreateUser(ctx, newUser); err != nil {
 		s.logger.Error("Error creating user", zap.Error(err))
-		return s.replyText(ctx, replyToken, "註冊失敗, 請稍後再試")
+		return s.replyText(ctx, replyToken, internalErrors.ErrRegister.Error())
 	}
 	s.removeRegisterProcess(userID)
 	return s.replyText(ctx, replyToken, "註冊成功! 歡迎使用營養師機器人")
@@ -97,7 +98,7 @@ func (s *Service) dailyReport(ctx context.Context, userID string, user *models.U
 	histories, err := s.store.GetMealHistory(ctx, q)
 	if err != nil {
 		s.logger.Error("Error getting history", zap.Error(err))
-		return s.replyText(ctx, replyToken, "Error getting history")
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	uid := uuid.New()
 	dailyInfo := &gpt.DailyInfo{
@@ -116,14 +117,14 @@ func (s *Service) dailyReport(ctx context.Context, userID string, user *models.U
 	}
 	mealsInt := models.GetMealsIntFromMeals(meals)
 	if mealsInt == 0 {
-		return s.replyText(ctx, replyToken, "No meals found")
+		return s.replyText(ctx, replyToken, internalErrors.ErrNoHistory.Error())
 	}
 	prev, err := s.store.GetMealDaily(ctx, query.NewQuery().
 		AddFilter(squirrel.Eq{"line_id": userID}).
 		AddFilter(squirrel.Eq{"meals": mealsInt}))
 	if err != nil {
 		s.logger.Error("Error getting history", zap.Error(err))
-		return s.replyText(ctx, replyToken, "Error getting history")
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	if len(prev) > 0 {
 		daliy := prev[0]
@@ -135,8 +136,20 @@ func (s *Service) dailyReport(ctx context.Context, userID string, user *models.U
 		return s.sendMsg(ctx, userID, uid.String(), msg)
 	}
 
+	usedToken, err := s.store.GetUsage(ctx, userID)
+	if err != nil {
+		s.logger.Error("Error getting usage", zap.Error(err))
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
+	}
+	if time.Since(usedToken.UpdatedAt) > 24*time.Hour {
+		usedToken.Usage = 0
+	}
+	if usedToken.Usage >= s.maxDailyToken {
+		return s.replyText(ctx, replyToken, internalErrors.ErrOutOfDailyToken.Error())
+	}
+
 	go func() {
-		if err := s.AnalyzeMealDailyFn(ctx, uid, userID, dailyInfo, s); err != nil {
+		if err := s.AnalyzeMealDailyFn(ctx, uid, userID, usedToken.Usage, dailyInfo, s); err != nil {
 			s.logger.Error("AnalyzeMeal error", zap.Error(err))
 			err = s.store.UpdateSendRequest(ctx, &models.SendRequest{
 				RequestID: uid.String(),
@@ -161,7 +174,7 @@ func (s *Service) joinUs(ctx context.Context, replyToken string) error {
 
 func (s *Service) getMonth(ctx context.Context, userID string, replyToken string, datas []string) error {
 	if len(datas) < 2 {
-		return s.replyText(ctx, replyToken, "unknown action")
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	dateStr := datas[0]
 	nextAct := datas[1]
@@ -171,7 +184,7 @@ func (s *Service) getMonth(ctx context.Context, userID string, replyToken string
 		return nil
 	}
 	if nextAct != ActionTypeSetReportStart.String() && nextAct != ActionTypeSetReportEnd.String() {
-		return s.replyText(ctx, replyToken, "unknown action")
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	altText := ""
 	if nextAct == ActionTypeSetReportStart.String() {
@@ -188,7 +201,7 @@ func (s *Service) getMonth(ctx context.Context, userID string, replyToken string
 		startDate, err = time.Parse("2006-01-02", startDateStr)
 		if err != nil {
 			s.logger.Error("Error parsing date", zap.Error(err))
-			return s.replyText(ctx, replyToken, "unknown action")
+			return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 		}
 	}
 
@@ -199,7 +212,7 @@ func (s *Service) getMonth(ctx context.Context, userID string, replyToken string
 func (s *Service) setReportStart(ctx context.Context, userID string, replyToken string, datas []string) error {
 	if len(datas) < 1 {
 		s.logger.Error("Error parsing date", zap.Strings("datas", datas))
-		return s.replyText(ctx, replyToken, "unknown action")
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	dateStr := datas[0]
 	s.cache.SetStartReport(userID, dateStr)
@@ -207,7 +220,7 @@ func (s *Service) setReportStart(ctx context.Context, userID string, replyToken 
 	startDate, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
 		s.logger.Error("Error parsing date", zap.Error(err))
-		return s.replyText(ctx, replyToken, "unknown action")
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	msg := template.GetMonthMsg(startDate, startDate, "set_report_end")
 	return s.replyFlex(ctx, replyToken, "set report end", msg)
@@ -216,7 +229,7 @@ func (s *Service) setReportStart(ctx context.Context, userID string, replyToken 
 func (s *Service) setReportEnd(ctx context.Context, userID string, replyToken string, datas []string) error {
 	if len(datas) < 1 {
 		s.logger.Error("Error parsing date", zap.Strings("datas", datas))
-		return s.replyText(ctx, replyToken, "unknown action")
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	dateStr := datas[0]
 	startDateStr := s.cache.GetStartReport(userID)
@@ -227,7 +240,7 @@ func (s *Service) setReportEnd(ctx context.Context, userID string, replyToken st
 	startDate, _ := time.Parse("2006-01-02", startDateStr)
 	endDate, _ := time.Parse("2006-01-02", dateStr)
 	if endDate.Before(startDate) {
-		return s.replyText(ctx, replyToken, "結束日期必須大於開始日期")
+		return s.replyText(ctx, replyToken, internalErrors.ErrEndDateBeforeStartDate.Error())
 	}
 	q := query.NewQuery()
 	q = q.AddFilter(squirrel.And{
@@ -239,7 +252,7 @@ func (s *Service) setReportEnd(ctx context.Context, userID string, replyToken st
 	histories, err := s.store.GetMealHistory(ctx, q)
 	if err != nil {
 		s.logger.Error("Error getting history", zap.Error(err))
-		return s.replyText(ctx, replyToken, "Error getting history")
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 
 	// Simple JSON dump for now
@@ -262,7 +275,7 @@ func (s *Service) handlePostback(ctx context.Context, event *linebot.Event) erro
 	user, err := s.getUserInfo(ctx, userID)
 	if err != nil {
 		s.logger.Error("Error getting user info", zap.Error(err))
-		return s.replyText(ctx, event.ReplyToken, "Error getting user info")
+		return s.replyText(ctx, event.ReplyToken, internalErrors.ErrFaiedToGetUser.Error())
 	}
 
 	if user == nil && actionType != ActionTypeCheckBasicInfo {
