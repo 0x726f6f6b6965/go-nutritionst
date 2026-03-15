@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     weight NUMERIC(10, 2),
     age INTEGER,
     gender SMALLINT,
+    max_daliy_token BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -63,3 +64,26 @@ CREATE TABLE IF NOT EXISTS send_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS used_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    line_id TEXT UNIQUE,
+    used_token BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_used_tokens_line_id FOREIGN KEY (line_id) REFERENCES users (line_id) ON DELETE CASCADE
+);
+
+-- create a function to update updated_at on used_tokens once the row is updated
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_used_tokens_updated_at
+BEFORE UPDATE ON used_tokens
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();

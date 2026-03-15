@@ -20,6 +20,7 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 			"weight",
 			"age",
 			"gender",
+			"max_daily_token",
 			"created_at",
 			"updated_at").
 		Values(user.LineID,
@@ -27,6 +28,7 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 			user.Weight,
 			user.Age,
 			user.Gender,
+			user.MaxDailyToken,
 			user.CreatedAt,
 			user.UpdatedAt).
 		PlaceholderFormat(squirrel.Dollar).
