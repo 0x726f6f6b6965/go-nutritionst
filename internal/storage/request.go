@@ -18,11 +18,13 @@ func (p *Postgres) CreateSendRequest(ctx context.Context, request *models.SendRe
 			"request_id",
 			"request_type",
 			"status",
+			"data",
 			"created_at",
 			"updated_at").
 		Values(request.RequestID,
 			request.RequestType,
 			request.Status,
+			request.Data,
 			request.CreatedAt,
 			request.UpdatedAt).
 		PlaceholderFormat(squirrel.Dollar).
@@ -53,6 +55,7 @@ func (p *Postgres) GetSendRequestByRequestID(ctx context.Context, requestID stri
 func (p *Postgres) UpdateSendRequest(ctx context.Context, request *models.SendRequest) error {
 	sql, args, err := squirrel.Update(sendRequestsTable).
 		Set("status", request.Status).
+		Set("error", request.Error).
 		Set("updated_at", request.UpdatedAt).
 		Where(squirrel.Eq{"request_id": request.RequestID}).
 		PlaceholderFormat(squirrel.Dollar).

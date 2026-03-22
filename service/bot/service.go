@@ -196,14 +196,14 @@ func (s *Service) handleImageMessage(ctx context.Context, event *linebot.Event, 
 	go func() {
 		if err := s.AnalyzeMealFn(ctx, uid, userID, usedToken.Usage, mealInfo, s); err != nil {
 			s.logger.Error("AnalyzeMeal error", zap.Error(err))
-			err = s.store.UpdateSendRequest(ctx, &models.SendRequest{
+			sendErr := s.store.UpdateSendRequest(ctx, &models.SendRequest{
 				RequestID: uid.String(),
 				Status:    models.SendRequestStatusFailed,
 				Error:     err.Error(),
 				UpdatedAt: time.Now(),
 			})
-			if err != nil {
-				s.logger.Error("UpdateSendRequest error", zap.Error(err))
+			if sendErr != nil {
+				s.logger.Error("UpdateSendRequest error", zap.Error(sendErr))
 			}
 		}
 	}()

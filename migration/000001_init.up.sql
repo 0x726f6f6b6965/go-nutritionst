@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS send_requests (
     request_id UUID,
     request_type SMALLINT,
     status SMALLINT,
+    data TEXT,
     fail_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL

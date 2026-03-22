@@ -5,7 +5,11 @@ export $(shell sed 's/=.*//' .env)
 
 .PHONY: build
 build:
-	@docker build -t fastapi-app -f ./deployment/Dockerfile .
+	@docker build -t fastapi-app -f ./deployment/line-bot/Dockerfile .
+
+.PHONY: build-broadcast
+build-broadcast:
+	@docker build -t broadcast-app -f ./deployment/broadcast/Dockerfile .
 
 .PHONY: run
 run: build
@@ -41,7 +45,7 @@ image-push:build-img
 .PHONY: build-img
 build-img:
 	@export TARGETPLATFORM=linux/amd64 && \
-	docker build -t ${DOCKER_HOSTNAME}/${PROJECT_ID}/${PROJECTNAME}/${IMG_NAME} -f ./deployment/Dockerfile .
+	docker build -t ${DOCKER_HOSTNAME}/${PROJECT_ID}/${PROJECTNAME}/${IMG_NAME} -f ./deployment/line-bot/Dockerfile .
 
 
 .PHONY: deploy

@@ -3,13 +3,14 @@ package models
 import "time"
 
 type SendRequest struct {
-	ID          int64
-	RequestID   string
-	RequestType SendRequestType
-	Status      SendRequestStatus
-	Error       string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          int64             `json:"id" db:"id"`
+	RequestID   string            `json:"request_id" db:"request_id"`
+	RequestType SendRequestType   `json:"request_type" db:"request_type"`
+	Status      SendRequestStatus `json:"status" db:"status"`
+	Data        string            `json:"data" db:"data"`
+	Error       string            `json:"error" db:"fail_reason"`
+	CreatedAt   time.Time         `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at" db:"updated_at"`
 }
 
 type SendRequestType int
@@ -17,9 +18,10 @@ type SendRequestType int
 type SendRequestStatus int
 
 const (
-	SendRequestTypeUnknown SendRequestType = 0
-	SendRequestTypeMeal    SendRequestType = 1
-	SendRequestTypePlan    SendRequestType = 2
+	SendRequestTypeUnknown   SendRequestType = 0
+	SendRequestTypeMeal      SendRequestType = 1
+	SendRequestTypeDaily     SendRequestType = 2
+	SendRequestTypeBroadcast SendRequestType = 3
 )
 
 const (

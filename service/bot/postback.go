@@ -147,18 +147,29 @@ func (s *Service) dailyReport(ctx context.Context, userID string, user *models.U
 	if usedToken.Usage >= s.maxDailyToken {
 		return s.replyText(ctx, replyToken, internalErrors.ErrOutOfDailyToken.Error())
 	}
+	// Send request to AI
+	if err := s.store.CreateSendRequest(ctx, &models.SendRequest{
+		RequestID:   uid.String(),
+		RequestType: models.SendRequestTypeDaily,
+		Status:      models.SendRequestStatusPending,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}); err != nil {
+		s.logger.Error("Error creating send request", zap.Error(err))
+		return s.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
+	}
 
 	go func() {
 		if err := s.AnalyzeMealDailyFn(ctx, uid, userID, usedToken.Usage, dailyInfo, s); err != nil {
 			s.logger.Error("AnalyzeMeal error", zap.Error(err))
-			err = s.store.UpdateSendRequest(ctx, &models.SendRequest{
+			sendErr := s.store.UpdateSendRequest(ctx, &models.SendRequest{
 				RequestID: uid.String(),
 				Status:    models.SendRequestStatusFailed,
 				Error:     err.Error(),
 				UpdatedAt: time.Now(),
 			})
-			if err != nil {
-				s.logger.Error("UpdateSendRequest error", zap.Error(err))
+			if sendErr != nil {
+				s.logger.Error("UpdateSendRequest error", zap.Error(sendErr))
 			}
 		}
 	}()
