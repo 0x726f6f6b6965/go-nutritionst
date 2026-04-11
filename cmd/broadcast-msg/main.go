@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
@@ -79,8 +78,6 @@ func main() {
 			RequestType: models.SendRequestTypeBroadcast,
 			Status:      models.SendRequestStatusFailed,
 			Data:        msg,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
 		}); sendErr != nil {
 			logger.Error("Failed to create send request", zap.Error(sendErr))
 		}
@@ -90,8 +87,6 @@ func main() {
 		RequestType: models.SendRequestTypeBroadcast,
 		Status:      models.SendRequestStatusSuccess,
 		Data:        msg,
-		UpdatedAt:   time.Now(),
-		CreatedAt:   time.Now(),
 	}); err != nil {
 		logger.Error("Failed to update send request", zap.Error(err))
 	}

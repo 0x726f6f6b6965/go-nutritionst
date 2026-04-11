@@ -18,15 +18,11 @@ func (p *Postgres) CreateSendRequest(ctx context.Context, request *models.SendRe
 			"request_id",
 			"request_type",
 			"status",
-			"data",
-			"created_at",
-			"updated_at").
+			"data").
 		Values(request.RequestID,
 			request.RequestType,
 			request.Status,
-			request.Data,
-			request.CreatedAt,
-			request.UpdatedAt).
+			request.Data).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 	if err != nil {
@@ -52,12 +48,13 @@ func (p *Postgres) GetSendRequestByRequestID(ctx context.Context, requestID stri
 	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[models.SendRequest])
 }
 
-func (p *Postgres) UpdateSendRequest(ctx context.Context, request *models.SendRequest) error {
-	sql, args, err := squirrel.Update(sendRequestsTable).
-		Set("status", request.Status).
-		Set("error", request.Error).
-		Set("updated_at", request.UpdatedAt).
-		Where(squirrel.Eq{"request_id": request.RequestID}).
+func (p *Postgres) UpdateSendRequest(ctx context.Context, requestID string, vals ...UpdateColumn) error {
+	builder := squirrel.Update(sendRequestsTable)
+	for _, val := range vals {
+		builder = builder.Set(string(val.ColumnName), val.Value)
+	}
+	sql, args, err := builder.
+		Where(squirrel.Eq{"request_id": requestID}).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 	if err != nil {

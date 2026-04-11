@@ -52,8 +52,8 @@ menu = {
       },
       "action": {
         "type": "postback",
-        "label": "加入會員",
-        "data": "action=join_us"
+        "label": "改變目標",
+        "data": "action=change_target_weight"
       }
     }
   ]

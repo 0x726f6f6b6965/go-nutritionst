@@ -18,6 +18,7 @@ type User struct {
 	LineID        string    `json:"line_id" db:"line_id"`
 	Height        float64   `json:"height" db:"height"`
 	Weight        float64   `json:"weight" db:"weight"`
+	TargetWeight  float64   `json:"target_weight" db:"target_weight"`
 	Age           int       `json:"age" db:"age"`
 	Gender        Gender    `json:"gender" db:"gender"`
 	MaxDailyToken int64     `json:"max_daily_token" db:"max_daily_token"`

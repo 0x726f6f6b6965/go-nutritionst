@@ -25,7 +25,7 @@ func GetCheckMsg(title string, vars []Variable, actions []string) *messaging_api
 					Text:  v.Name,
 					Color: "#aaaaaa",
 					Size:  "sm",
-					Flex:  1,
+					Flex:  2,
 				},
 				&messaging_api.FlexText{
 					Text:  v.Value,

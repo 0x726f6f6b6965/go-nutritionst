@@ -15,7 +15,7 @@ func (p *Postgres) UpsertUsage(ctx context.Context, usage *models.Usage) error {
 	sql, args, err := squirrel.Insert("used_tokens").
 		Columns("line_id", "used_token").
 		Values(usage.LineID, usage.Usage).
-		Suffix("ON CONFLICT (line_id) DO UPDATE SET used_token = :used_token").
+		Suffix("ON CONFLICT (line_id) DO UPDATE SET used_token = EXCLUDED.used_token").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 	if err != nil {

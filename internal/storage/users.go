@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"time"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
 	"github.com/Masterminds/squirrel"
@@ -18,6 +19,7 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 			"line_id",
 			"height",
 			"weight",
+			"target_weight",
 			"age",
 			"gender",
 			"max_daily_token",
@@ -26,6 +28,7 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 		Values(user.LineID,
 			user.Height,
 			user.Weight,
+			user.TargetWeight,
 			user.Age,
 			user.Gender,
 			user.MaxDailyToken,
@@ -54,4 +57,18 @@ func (p *Postgres) GetUserByLineID(ctx context.Context, lineID string) (*models.
 		return nil, err
 	}
 	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[models.User])
+}
+
+func (p *Postgres) UpdateUserTargetWeight(ctx context.Context, lineID string, targetWeight float64) error {
+	sql, args, err := squirrel.Update(usersTable).
+		Set("target_weight", targetWeight).
+		Set("updated_at", time.Now()).
+		Where(squirrel.Eq{"line_id": lineID}).
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
+	if err != nil {
+		return err
+	}
+	_, err = p.sqlexer.Exec(ctx, sql, args...)
+	return err
 }

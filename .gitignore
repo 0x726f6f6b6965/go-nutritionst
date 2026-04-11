@@ -3,3 +3,4 @@
 deployment/infra/.terraform
 deployment/infra/.terraform.*
 deployment/infra/terraform.*
+departed/*

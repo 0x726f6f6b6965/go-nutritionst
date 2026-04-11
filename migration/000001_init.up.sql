@@ -3,9 +3,10 @@ CREATE TABLE IF NOT EXISTS users (
     line_id TEXT UNIQUE,
     height NUMERIC(10, 2),
     weight NUMERIC(10, 2),
+    target_weight NUMERIC(10, 2),
     age INTEGER,
     gender SMALLINT,
-    max_daliy_token BIGINT DEFAULT 0,
+    max_daily_token BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -75,6 +76,19 @@ CREATE TABLE IF NOT EXISTS used_tokens (
     CONSTRAINT fk_used_tokens_line_id FOREIGN KEY (line_id) REFERENCES users (line_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS daily_record (
+    id BIGSERIAL PRIMARY KEY,
+    request_id UUID,
+    line_id TEXT,
+    date TEXT,
+    total_water_ml NUMERIC(10, 2) DEFAULT NULL,
+    total_sleep_hour NUMERIC(10, 2) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (line_id, date),
+    CONSTRAINT fk_daily_record_line_id FOREIGN KEY (line_id) REFERENCES users (line_id) ON DELETE CASCADE
+);
+
 -- create a function to update updated_at on used_tokens once the row is updated
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -86,5 +100,20 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_used_tokens_updated_at
 BEFORE UPDATE ON used_tokens
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_send_requests_updated_at
+BEFORE UPDATE ON send_requests
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_daily_record_updated_at
+BEFORE UPDATE ON daily_record
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();

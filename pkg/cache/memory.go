@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0x726f6f6b6965/go-nutritionst/service/bot/action"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -75,6 +76,17 @@ func (u *UserContext) GetRegisterProcess(userID string) bool {
 	return false
 }
 
+func (u *UserContext) GetChangeTargetWeightProcess(userID string) bool {
+	if val, found := u.c.Get(fmt.Sprintf("%s@changeTargetWeightProcess", userID)); found {
+		return val.(bool)
+	}
+	return false
+}
+
+func (u *UserContext) SetChangeTargetWeightProcess(userID string, isProcess bool) {
+	u.c.Set(fmt.Sprintf("%s@changeTargetWeightProcess", userID), isProcess, cache.DefaultExpiration)
+}
+
 func (u *UserContext) SetRegisterProcess(userID string, isProcess bool) {
 	u.c.Set(fmt.Sprintf("%s@registerProcess", userID), isProcess, cache.DefaultExpiration)
 }
@@ -113,6 +125,22 @@ func (u *UserContext) SetWeight(userID string, weight float64) {
 
 func (u *UserContext) DeleteWeight(userID string) {
 	u.c.Delete(fmt.Sprintf("%s@weight", userID))
+}
+
+// Target Weight
+func (u *UserContext) GetTargetWeight(userID string) float64 {
+	if val, found := u.c.Get(fmt.Sprintf("%s@targetWeight", userID)); found {
+		return val.(float64)
+	}
+	return 0
+}
+
+func (u *UserContext) SetTargetWeight(userID string, targetWeight float64) {
+	u.c.Set(fmt.Sprintf("%s@targetWeight", userID), targetWeight, cache.DefaultExpiration)
+}
+
+func (u *UserContext) DeleteTargetWeight(userID string) {
+	u.c.Delete(fmt.Sprintf("%s@targetWeight", userID))
 }
 
 // Age
@@ -161,4 +189,19 @@ func (u *UserContext) SetStartReport(userID string, dateStr string) {
 
 func (u *UserContext) DeleteStartReport(userID string) {
 	u.c.Delete(fmt.Sprintf("%s@startReport", userID))
+}
+
+func (u *UserContext) GetTextMessageActionType(userID string) action.TextMessageActionType {
+	if val, found := u.c.Get(fmt.Sprintf("%s@textMessageActionType", userID)); found {
+		return val.(action.TextMessageActionType)
+	}
+	return action.TextMessageActionTypeUnknown
+}
+
+func (u *UserContext) SetTextMessageActionType(userID string, actionType action.TextMessageActionType) {
+	u.c.Set(fmt.Sprintf("%s@textMessageActionType", userID), actionType, cache.DefaultExpiration)
+}
+
+func (u *UserContext) DeleteTextMessageActionType(userID string) {
+	u.c.Delete(fmt.Sprintf("%s@textMessageActionType", userID))
 }
