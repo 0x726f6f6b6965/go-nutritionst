@@ -11,18 +11,18 @@ import os
 menu = {
   "size": {
     "width": 2500,
-    "height": 843
+    "height": 1686
   },
   "selected": True,
-  "name": "Rich Menu 1",
-  "chatBarText": "RichMenu",
+  "name": "Menu 1",
+  "chatBarText": "查看更多資訊",
   "areas": [
     {
       "bounds": {
-        "x": 60,
-        "y": 45,
-        "width": 780,
-        "height": 760
+        "x": 0,
+        "y": 0,
+        "width": 833,
+        "height": 842
       },
       "action": {
         "type": "postback",
@@ -32,10 +32,10 @@ menu = {
     },
     {
       "bounds": {
-        "x": 860,
-        "y": 45,
-        "width": 780,
-        "height": 760
+        "x": 834,
+        "y": 4,
+        "width": 829,
+        "height": 842
       },
       "action": {
         "type": "postback",
@@ -45,15 +45,41 @@ menu = {
     },
     {
       "bounds": {
-        "x": 1660,
-        "y": 45,
-        "width": 780,
-        "height": 760
+        "x": 1675,
+        "y": 8,
+        "width": 825,
+        "height": 834
+      },
+      "action": {
+        "type": "postback",
+        "label": "每日飲水",
+        "data": "action=set_water"
+      }
+    },
+    {
+      "bounds": {
+        "x": 0,
+        "y": 850,
+        "width": 829,
+        "height": 833
       },
       "action": {
         "type": "postback",
         "label": "改變目標",
         "data": "action=change_target_weight"
+      }
+    },
+    {
+      "bounds": {
+        "x": 829,
+        "y": 850,
+        "width": 839,
+        "height": 836
+      },
+      "action": {
+        "type": "postback",
+        "label": "每日睡眠",
+        "data": "action=set_sleep"
       }
     }
   ]
