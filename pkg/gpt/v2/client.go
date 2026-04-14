@@ -166,3 +166,15 @@ func (c *Client) GetMealDailyInfo(ctx context.Context, dailyInfo *gpt.DailyInfo)
 	}
 	return &dailyResponse, usage, nil
 }
+
+func Retry[T any](ctx context.Context, retryLimit int, fn func() (*T, error)) (*T, error) {
+	for i := 0; i < retryLimit; i++ {
+		result, err := fn()
+		if err == nil {
+			return result, nil
+		}
+		// TODO: add exponential backoff
+	}
+
+	return nil, fmt.Errorf("failed to retry after %d attempts", retryLimit)
+}
