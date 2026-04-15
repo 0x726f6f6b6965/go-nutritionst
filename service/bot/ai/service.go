@@ -217,3 +217,8 @@ func getDailyHistoryFromResp(userID string, uid uuid.UUID, dailyInfo *gpt.DailyI
 	}
 	return history
 }
+
+func (s *Service) AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, basicInfo *gpt.BasicUserInfo) error {
+	// TODO: implement
+	return nil
+}

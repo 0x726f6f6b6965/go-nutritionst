@@ -132,8 +132,33 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 		h.logger.Error("Error creating user", zap.Error(err))
 		return h.replyText(ctx, replyToken, internalErrors.ErrRegister.Error())
 	}
+	// Send request to AI
+	uid := uuid.New()
+	if err := h.store.CreateSendRequest(ctx, &models.SendRequest{
+		RequestID:   uid.String(),
+		RequestType: models.SendRequestTypeBasicInfo,
+		Status:      models.SendRequestStatusPending,
+	}); err != nil {
+		h.logger.Error("Error creating send request", zap.Error(err))
+		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
+	}
 	h.removeRegisterProcess(userID)
-	return h.replyText(ctx, replyToken, "註冊成功! 歡迎使用營養師機器人")
+	go func() {
+		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, 0, &gpt.BasicUserInfo{}); err != nil {
+			h.logger.Error("AnalyzeMeal error", zap.Error(err))
+			sendErr := h.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
+				ColumnName: storage.SendRequestStatus,
+				Value:      models.SendRequestStatusFailed,
+			}, storage.UpdateColumn{
+				ColumnName: storage.SendRequestFailReason,
+				Value:      err.Error(),
+			})
+			if sendErr != nil {
+				h.logger.Error("UpdateSendRequest error", zap.Error(sendErr))
+			}
+		}
+	}()
+	return h.replyText(ctx, replyToken, "註冊成功! AI 分析目標中，請稍後")
 }
 
 func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.User, replyToken string) error {

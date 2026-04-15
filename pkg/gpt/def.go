@@ -27,6 +27,10 @@ type DailyInfo struct {
 	Meta        string     `json:"meta"`
 }
 
+type BasicUserInfo struct {
+	//TODO: define it
+}
+
 type EstNutrition struct {
 	CaloriesKcal float64 `json:"calories_kcal" jsonschema_description:"Total calories in kcal for this dish"`
 	ProteinG     float64 `json:"protein_g" jsonschema_description:"Total protein in g for this dish"`

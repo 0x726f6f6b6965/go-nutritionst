@@ -22,6 +22,7 @@ const (
 	SendRequestTypeMeal      SendRequestType = 1
 	SendRequestTypeDaily     SendRequestType = 2
 	SendRequestTypeBroadcast SendRequestType = 3
+	SendRequestTypeBasicInfo SendRequestType = 4
 )
 
 const (
