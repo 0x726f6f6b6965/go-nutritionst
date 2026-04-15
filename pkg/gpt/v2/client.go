@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt"
 	"github.com/invopop/jsonschema"
@@ -104,21 +105,25 @@ func NewClient(apiKey string) *Client {
 func (c *Client) GetMealInfo(ctx context.Context, mealInfo *gpt.MealInfoWithImage) (*gpt.AIMealResponse, int64, error) {
 	imgBase64 := base64.StdEncoding.EncodeToString(mealInfo.Image)
 	imgURL := fmt.Sprintf("data:image/jpeg;base64,%s", imgBase64)
-	chat, err := c.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
-		Messages: []openai.ChatCompletionMessageParamUnion{
-			openai.AssistantMessage(agentPrompt),
-			openai.UserMessage([]openai.ChatCompletionContentPartUnionParam{
-				openai.TextContentPart(fmt.Sprintf("這是%s, 請分析這張照片（繁體中文輸出）。\n%s", mealInfo.Description, mealInfo.UserProfile)),
-				openai.ImageContentPart(openai.ChatCompletionContentPartImageImageURLParam{URL: imgURL}),
-			}),
-		},
-		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
-			OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{JSONSchema: c.mealResponseSchema},
-		},
-		// Only certain models can perform structured outputs
-		Model:               c.model,
-		MaxCompletionTokens: openai.Int(1200),
-	})
+	fn := func(nctx context.Context) (res *openai.ChatCompletion, err error) {
+		return c.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+			Messages: []openai.ChatCompletionMessageParamUnion{
+				openai.AssistantMessage(agentPrompt),
+				openai.UserMessage([]openai.ChatCompletionContentPartUnionParam{
+					openai.TextContentPart(fmt.Sprintf("這是%s, 請分析這張照片（繁體中文輸出）。\n%s", mealInfo.Description, mealInfo.UserProfile)),
+					openai.ImageContentPart(openai.ChatCompletionContentPartImageImageURLParam{URL: imgURL}),
+				}),
+			},
+			ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
+				OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{JSONSchema: c.mealResponseSchema},
+			},
+			// Only certain models can perform structured outputs
+			Model:               c.model,
+			MaxCompletionTokens: openai.Int(1200),
+		})
+	}
+
+	chat, err := Retry(ctx, 3, fn)
 	var usage int64
 	if chat != nil {
 		usage = chat.Usage.TotalTokens
@@ -139,19 +144,22 @@ func (c *Client) GetMealDailyInfo(ctx context.Context, dailyInfo *gpt.DailyInfo)
 	if err != nil {
 		return nil, 0, err
 	}
+	fn := func(nctx context.Context) (res *openai.ChatCompletion, err error) {
+		return c.client.Chat.Completions.New(nctx, openai.ChatCompletionNewParams{
+			Messages: []openai.ChatCompletionMessageParamUnion{
+				openai.AssistantMessage(dailyAgentPrompt),
+				openai.UserMessage(string(jsonDailyInfo)),
+			},
+			ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
+				OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{JSONSchema: c.dailyResponseSchema},
+			},
+			// Only certain models can perform structured outputs
+			Model:               c.model,
+			MaxCompletionTokens: openai.Int(1200),
+		})
+	}
 
-	chat, err := c.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
-		Messages: []openai.ChatCompletionMessageParamUnion{
-			openai.AssistantMessage(dailyAgentPrompt),
-			openai.UserMessage(string(jsonDailyInfo)),
-		},
-		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
-			OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{JSONSchema: c.dailyResponseSchema},
-		},
-		// Only certain models can perform structured outputs
-		Model:               c.model,
-		MaxCompletionTokens: openai.Int(1200),
-	})
+	chat, err := Retry(ctx, 3, fn)
 	var usage int64
 	if chat != nil {
 		usage = chat.Usage.TotalTokens
@@ -167,14 +175,21 @@ func (c *Client) GetMealDailyInfo(ctx context.Context, dailyInfo *gpt.DailyInfo)
 	return &dailyResponse, usage, nil
 }
 
-func Retry[T any](ctx context.Context, retryLimit int, fn func() (*T, error)) (*T, error) {
-	for i := 0; i < retryLimit; i++ {
-		result, err := fn()
+func Retry[T any](ctx context.Context, retryLimit int, fn func(ctx context.Context) (*T, error)) (*T, error) {
+	nctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	duration := 10 * time.Second
+	var (
+		err    error
+		result *T
+	)
+	for range retryLimit {
+		result, err = fn(nctx)
 		if err == nil {
 			return result, nil
 		}
-		// TODO: add exponential backoff
+		<-time.After(duration)
+		duration += duration
 	}
-
-	return nil, fmt.Errorf("failed to retry after %d attempts", retryLimit)
+	return nil, fmt.Errorf("failed to retry after %d attempts, err: %w", retryLimit, err)
 }
