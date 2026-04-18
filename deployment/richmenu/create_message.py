@@ -52,8 +52,8 @@ menu = {
       },
       "action": {
         "type": "postback",
-        "label": "每日飲水",
-        "data": "action=set_water"
+        "label": "登記數據",
+        "data": "action=setting"
       }
     },
     {
@@ -66,20 +66,7 @@ menu = {
       "action": {
         "type": "postback",
         "label": "改變目標",
-        "data": "action=change_target_weight"
-      }
-    },
-    {
-      "bounds": {
-        "x": 829,
-        "y": 850,
-        "width": 839,
-        "height": 836
-      },
-      "action": {
-        "type": "postback",
-        "label": "每日睡眠",
-        "data": "action=set_sleep"
+        "data": "action=change_target"
       }
     }
   ]

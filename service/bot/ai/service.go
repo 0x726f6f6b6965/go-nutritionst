@@ -219,6 +219,40 @@ func getDailyHistoryFromResp(userID string, uid uuid.UUID, dailyInfo *gpt.DailyI
 }
 
 func (s *Service) AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, basicInfo *gpt.BasicUserInfo) error {
-	// TODO: implement
+	// AI Analysis
+	aiResp, usage, err := s.gpt.GetTargetSuggestion(ctx, basicInfo)
+	if usage > 0 {
+		if err := s.store.UpsertUsage(ctx, &models.Usage{
+			LineID: userID,
+			Usage:  usedToken + usage,
+		}); err != nil {
+			s.logger.Error("DB Error", zap.Error(err))
+		}
+	}
+	if err != nil {
+		s.logger.Error("AI Error", zap.Error(err))
+		msg := messaging_api.TextMessage{
+			Text: internalErrors.ErrFailedToAnalyze.Error(),
+		}
+
+		if sendErr := s.sendMsg(ctx, userID, uid.String(), msg); sendErr != nil {
+			log.Printf("Error sending message: %v", sendErr)
+			err = errors.Join(err, sendErr)
+		}
+		return err
+	}
+	msg := messaging_api.TextMessage{
+		Text: aiResp,
+	}
+	if err := s.sendMsg(ctx, userID, uid.String(), msg); err != nil {
+		s.logger.Error("Error sending message", zap.Error(err))
+		return err
+	}
+	if err := s.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
+		ColumnName: storage.SendRequestStatus,
+		Value:      models.SendRequestStatusSuccess,
+	}); err != nil {
+		s.logger.Error("UpdateSendRequest error", zap.Error(err))
+	}
 	return nil
 }

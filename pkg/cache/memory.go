@@ -143,6 +143,22 @@ func (u *UserContext) DeleteTargetWeight(userID string) {
 	u.c.Delete(fmt.Sprintf("%s@targetWeight", userID))
 }
 
+// Target Timeframe
+func (u *UserContext) GetTargetTimeframe(userID string) int {
+	if val, found := u.c.Get(fmt.Sprintf("%s@targetTimeframe", userID)); found {
+		return val.(int)
+	}
+	return 0
+}
+
+func (u *UserContext) SetTargetTimeframe(userID string, targetTimeframe int) {
+	u.c.Set(fmt.Sprintf("%s@targetTimeframe", userID), targetTimeframe, cache.DefaultExpiration)
+}
+
+func (u *UserContext) DeleteTargetTimeframe(userID string) {
+	u.c.Delete(fmt.Sprintf("%s@targetTimeframe", userID))
+}
+
 // Age
 func (u *UserContext) GetAge(userID string) int {
 	if val, found := u.c.Get(fmt.Sprintf("%s@age", userID)); found {

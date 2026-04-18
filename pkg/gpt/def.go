@@ -7,6 +7,7 @@ import (
 type NutritionAPI interface {
 	GetMealInfo(ctx context.Context, mealInfo *MealInfoWithImage) (*AIMealResponse, int64, error)
 	GetMealDailyInfo(ctx context.Context, dailyInfo *DailyInfo) (*AIDailyResponse, int64, error)
+	GetTargetSuggestion(ctx context.Context, basicInfo *BasicUserInfo) (string, int64, error)
 }
 
 type MealInfo struct {
@@ -28,7 +29,7 @@ type DailyInfo struct {
 }
 
 type BasicUserInfo struct {
-	//TODO: define it
+	UserProfile string `json:"-"`
 }
 
 type EstNutrition struct {

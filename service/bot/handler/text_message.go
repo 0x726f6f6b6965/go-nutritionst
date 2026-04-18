@@ -12,6 +12,7 @@ import (
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/query"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/template"
+	"github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt"
 	"github.com/0x726f6f6b6965/go-nutritionst/service/bot/action"
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -37,12 +38,14 @@ func (h *Handler) HandleTextMessage(ctx context.Context, event *linebot.Event, m
 	// check the text message action type
 	textMessageActionType := h.cache.GetTextMessageActionType(userID)
 	switch textMessageActionType {
-	case action.TextMessageActionTypeSetTargetWeight:
+	case action.TextMessageActionTypeSetTarget:
 		return h.changeTargetWeightProcess(ctx, event, text)
 	case action.TextMessageActionTypeRecordWater:
 		return h.recordWaterProcess(ctx, event, text)
 	case action.TextMessageActionTypeRecordSleep:
 		return h.recordSleepProcess(ctx, event, text)
+	case action.TextMessageActionTypeRecordWeight:
+		return h.recordWeightProcess(ctx, event, text)
 	default:
 		// Registered user: Meal Logic
 		meal := h.cache.GetMeal(userID)
@@ -108,6 +111,15 @@ func (h *Handler) addUserProcess(ctx context.Context, event *linebot.Event, text
 			return h.replyText(ctx, event.ReplyToken, "目標體重格式錯誤，請重新輸入 ex. 65.0")
 		}
 		h.cache.SetTargetWeight(userID, tw)
+		return h.replyText(ctx, event.ReplyToken, "請輸入目標時間(月) ex. 3")
+	}
+
+	if h.cache.GetTargetTimeframe(userID) == 0 {
+		ttf, err := strconv.Atoi(text)
+		if err != nil {
+			return h.replyText(ctx, event.ReplyToken, "目標時間格式錯誤，請重新輸入 ex. 3")
+		}
+		h.cache.SetTargetTimeframe(userID, ttf)
 		return h.replyText(ctx, event.ReplyToken, "請輸入性別(男/女)")
 	}
 
@@ -136,6 +148,7 @@ func (h *Handler) addUserProcess(ctx context.Context, event *linebot.Event, text
 			{Name: "體重", Value: fmt.Sprintf("%.1f 公斤", h.cache.GetWeight(userID))},
 			{Name: "年齡", Value: fmt.Sprintf("%d 歲", h.cache.GetAge(userID))},
 			{Name: "目標體重", Value: fmt.Sprintf("%.1f 公斤", h.cache.GetTargetWeight(userID))},
+			{Name: "目標時間", Value: fmt.Sprintf("%d 個月", h.cache.GetTargetTimeframe(userID))},
 		}
 		msg := template.GetCheckMsg("基本資料", vars, []string{"action=check_basic_info&data=y", "action=check_basic_info&data=n"})
 		return h.replyFlex(ctx, event.ReplyToken, "basic info", msg)
@@ -145,17 +158,70 @@ func (h *Handler) addUserProcess(ctx context.Context, event *linebot.Event, text
 }
 
 func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.Event, text string) error {
-	weight, err := strconv.ParseFloat(text, 64)
-	if err != nil {
-		h.logger.Error("Error parsing weight", zap.Error(err))
-		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
+	userID := event.Source.UserID
+	var (
+		tw  float64
+		ttf int
+		err error
+	)
+	if h.cache.GetTargetWeight(userID) == 0 {
+		tw, err = strconv.ParseFloat(text, 64)
+		if err != nil {
+			return h.replyText(ctx, event.ReplyToken, "目標體重格式錯誤，請重新輸入 ex. 65.0")
+		}
+		h.cache.SetTargetWeight(userID, tw)
+		return h.replyText(ctx, event.ReplyToken, "請輸入目標時間(月) ex. 3")
 	}
-	if err := h.store.UpdateUserTargetWeight(ctx, event.Source.UserID, weight); err != nil {
+	if h.cache.GetTargetTimeframe(userID) == 0 {
+		ttf, err = strconv.Atoi(text)
+		if err != nil {
+			return h.replyText(ctx, event.ReplyToken, "目標時間格式錯誤，請重新輸入 ex. 3")
+		}
+	}
+	tw = h.cache.GetTargetWeight(userID)
+
+	if err := h.store.UpdateUserTarget(ctx, event.Source.UserID, tw, ttf); err != nil {
 		h.logger.Error("Error updating target weight", zap.Error(err))
 		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
 	}
+	h.cache.DeleteTargetWeight(userID)
+	h.cache.DeleteTargetTimeframe(userID)
 	h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("目標體重已更新 %.1f 公斤", weight))
+	uid := uuid.New()
+	user, err := h.store.GetUserByLineID(ctx, userID)
+	if err != nil {
+		h.logger.Error("Error getting user", zap.Error(err))
+		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
+	}
+	if err := h.store.CreateSendRequest(ctx, &models.SendRequest{
+		RequestID:   uid.String(),
+		RequestType: models.SendRequestTypeBasicInfo,
+		Status:      models.SendRequestStatusPending,
+	}); err != nil {
+		h.logger.Error("Error creating send request", zap.Error(err))
+		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
+	}
+	h.cache.DeleteTargetWeight(userID)
+	h.cache.DeleteTargetTimeframe(userID)
+	h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
+	go func() {
+		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, 0, &gpt.BasicUserInfo{
+			UserProfile: user.ToProfileString(),
+		}); err != nil {
+			h.logger.Error("AnalyzeMeal error", zap.Error(err))
+			sendErr := h.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
+				ColumnName: storage.SendRequestStatus,
+				Value:      models.SendRequestStatusFailed,
+			}, storage.UpdateColumn{
+				ColumnName: storage.SendRequestFailReason,
+				Value:      err.Error(),
+			})
+			if sendErr != nil {
+				h.logger.Error("UpdateSendRequest error", zap.Error(sendErr))
+			}
+		}
+	}()
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("目標已更新為 %.1f 公斤，預計 %d 個月達成, AI 分析中", tw, ttf))
 }
 
 func (h *Handler) recordWaterProcess(ctx context.Context, event *linebot.Event, text string) error {
@@ -230,4 +296,17 @@ func (h *Handler) recordSleepProcess(ctx context.Context, event *linebot.Event, 
 	}
 
 	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("睡眠時數已更新 %.1f 小時", sleep))
+}
+
+func (h *Handler) recordWeightProcess(ctx context.Context, event *linebot.Event, text string) error {
+	w, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		return h.replyText(ctx, event.ReplyToken, "體重格式錯誤，請重新輸入 ex. 70.5")
+	}
+	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
+	if err := h.store.UpdateUserWeight(ctx, event.Source.UserID, w); err != nil {
+		h.logger.Error("Error updating weight", zap.Error(err))
+		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
+	}
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("體重已更新 %.1f 公斤", w))
 }

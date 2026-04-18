@@ -20,6 +20,7 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 			"height",
 			"weight",
 			"target_weight",
+			"target_timeframe",
 			"age",
 			"gender",
 			"max_daily_token",
@@ -29,6 +30,7 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 			user.Height,
 			user.Weight,
 			user.TargetWeight,
+			user.TargetTimeframe,
 			user.Age,
 			user.Gender,
 			user.MaxDailyToken,
@@ -59,9 +61,24 @@ func (p *Postgres) GetUserByLineID(ctx context.Context, lineID string) (*models.
 	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[models.User])
 }
 
-func (p *Postgres) UpdateUserTargetWeight(ctx context.Context, lineID string, targetWeight float64) error {
+func (p *Postgres) UpdateUserTarget(ctx context.Context, lineID string, targetWeight float64, targetTimeframe int) error {
 	sql, args, err := squirrel.Update(usersTable).
 		Set("target_weight", targetWeight).
+		Set("target_timeframe", targetTimeframe).
+		Set("updated_at", time.Now()).
+		Where(squirrel.Eq{"line_id": lineID}).
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
+	if err != nil {
+		return err
+	}
+	_, err = p.sqlexer.Exec(ctx, sql, args...)
+	return err
+}
+
+func (p *Postgres) UpdateUserWeight(ctx context.Context, lineID string, weight float64) error {
+	sql, args, err := squirrel.Update(usersTable).
+		Set("weight", weight).
 		Set("updated_at", time.Now()).
 		Where(squirrel.Eq{"line_id": lineID}).
 		PlaceholderFormat(squirrel.Dollar).

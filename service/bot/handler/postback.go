@@ -60,12 +60,16 @@ func (h *Handler) HandlePostback(ctx context.Context, event *linebot.Event) erro
 		}
 	case action.ActionTypeDailyReport:
 		return h.dailyReport(ctx, userID, user, event.ReplyToken)
-	case action.ActionTypeChangeTargetWeight:
-		return h.changeTargetWeight(ctx, userID, event.ReplyToken)
+	case action.ActionTypeChangeTarget:
+		return h.changeTarget(ctx, userID, event.ReplyToken)
 	case action.ActionTypeSetWater:
 		return h.setWater(ctx, userID, event.ReplyToken)
 	case action.ActionTypeSetSleep:
 		return h.setSleep(ctx, userID, event.ReplyToken)
+	case action.ActionTypeSetWeight:
+		return h.setWeight(ctx, userID, event.ReplyToken)
+	case action.ActionTypeSetting:
+		return h.setting(ctx, event.ReplyToken)
 	default:
 		return h.replyText(ctx, event.ReplyToken, "unknown action")
 	}
@@ -114,19 +118,21 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 	height := h.cache.GetHeight(userID)
 	weight := h.cache.GetWeight(userID)
 	targetWeight := h.cache.GetTargetWeight(userID)
+	targetTimeframe := h.cache.GetTargetTimeframe(userID)
 	age := h.cache.GetAge(userID)
 	gender := models.Gender(h.cache.GetGender(userID))
 
 	newUser := &models.User{
-		LineID:        userID,
-		Height:        height,
-		Weight:        weight,
-		TargetWeight:  targetWeight,
-		Age:           age,
-		Gender:        gender,
-		MaxDailyToken: h.maxDailyToken,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		LineID:          userID,
+		Height:          height,
+		Weight:          weight,
+		TargetWeight:    targetWeight,
+		TargetTimeframe: targetTimeframe,
+		Age:             age,
+		Gender:          gender,
+		MaxDailyToken:   h.maxDailyToken,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 	if err := h.store.CreateUser(ctx, newUser); err != nil {
 		h.logger.Error("Error creating user", zap.Error(err))
@@ -144,7 +150,9 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 	}
 	h.removeRegisterProcess(userID)
 	go func() {
-		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, 0, &gpt.BasicUserInfo{}); err != nil {
+		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, 0, &gpt.BasicUserInfo{
+			UserProfile: newUser.ToProfileString(),
+		}); err != nil {
 			h.logger.Error("AnalyzeMeal error", zap.Error(err))
 			sendErr := h.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
 				ColumnName: storage.SendRequestStatus,
@@ -259,13 +267,19 @@ func (h *Handler) removeRegisterProcess(userID string) {
 	h.cache.DeleteHeight(userID)
 	h.cache.DeleteWeight(userID)
 	h.cache.DeleteTargetWeight(userID)
+	h.cache.DeleteTargetTimeframe(userID)
 	h.cache.DeleteAge(userID)
 	h.cache.DeleteGender(userID)
 }
 
-func (h *Handler) changeTargetWeight(ctx context.Context, userID string, replyToken string) error {
-	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeSetTargetWeight)
-	return h.replyText(ctx, replyToken, "請輸入新的目標體重")
+func (h *Handler) setting(ctx context.Context, replyToken string) error {
+	msg := template.GetSettingMsg()
+	return h.replyFlex(ctx, replyToken, "setting", msg)
+}
+
+func (h *Handler) changeTarget(ctx context.Context, userID string, replyToken string) error {
+	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeSetTarget)
+	return h.replyText(ctx, replyToken, "請輸入新的目標體重(公斤)")
 }
 
 func (h *Handler) setWater(ctx context.Context, userID string, replyToken string) error {
@@ -276,4 +290,9 @@ func (h *Handler) setWater(ctx context.Context, userID string, replyToken string
 func (h *Handler) setSleep(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordSleep)
 	return h.replyText(ctx, replyToken, "請輸入今日睡眠時數")
+}
+
+func (h *Handler) setWeight(ctx context.Context, userID string, replyToken string) error {
+	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordWeight)
+	return h.replyText(ctx, replyToken, "請輸入今日體重")
 }

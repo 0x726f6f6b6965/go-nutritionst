@@ -109,7 +109,7 @@ Tone:
 
 Output:
 - 只能是繁體中文 (Golden rule)
-- 80–150 characters
+- 80-150 characters
 - Must include:
   - Actionable suggestion (Target weight and timeframe adjustment if needed)
   - Clear judgment (reasonable / too aggressive)
@@ -159,7 +159,7 @@ BMR (Mifflin-St Jeor):
 - male: 10W + 6.25H - 5A + 5
 - female: 10W + 6.25H - 5A - 161
 
-TDEE = BMR × activity_factor
+TDEE = BMR * activity_factor
 (default activity_factor = 1.4)
 
 Calories target:
@@ -169,16 +169,16 @@ Calories target:
 
 Protein:
 - base: 1.6 g/kg
-- fat_loss: 1.8–2.2 g/kg
+- fat_loss: 1.8-2.2 g/kg
 
 Carbs/Fat:
-- protein kcal = protein_g × 4
+- protein kcal = protein_g x 4
 - remaining kcal:
-  carbs 40–50%, fat 20–30%
+  carbs 40-50%, fat 20-30%
 - fat ≥ 0.6 g/kg
 
 Water:
-- 30–40 ml/kg
+- 30-40 ml/kg
 - if high protein → +10%
 
 
@@ -197,7 +197,7 @@ calories:
 
 protein:
 - <90% → "insufficient"
-- 90–140% → "adequate"
+- 90-140% → "adequate"
 - >140% → "excess"
 
 sodium:
@@ -208,12 +208,12 @@ deltas = actual - target
 
 
 5. Insights
-- 2–5 key observations
+- 2-5 key observations
 - based on meals + distribution
 
 
 6. Coaching
-- 3–5 actionable suggestions
+- 3-5 actionable suggestions
 - practical and daily-life friendly
 
 
@@ -343,6 +343,32 @@ func (c *Client) GetMealDailyInfo(ctx context.Context, dailyInfo *gpt.DailyInfo)
 		return nil, usage, err
 	}
 	return &dailyResponse, usage, nil
+}
+
+func (c *Client) GetTargetSuggestion(ctx context.Context, basicInfo *gpt.BasicUserInfo) (string, int64, error) {
+
+	fn := func(nctx context.Context) (res *openai.ChatCompletion, err error) {
+		return c.client.Chat.Completions.New(nctx, openai.ChatCompletionNewParams{
+			Messages: []openai.ChatCompletionMessageParamUnion{
+				openai.AssistantMessage(targetSuggestionPrompt),
+				openai.UserMessage(basicInfo.UserProfile),
+			},
+			// Only certain models can perform structured outputs
+			Model:               c.model,
+			MaxCompletionTokens: openai.Int(1200),
+		})
+	}
+
+	chat, err := Retry(ctx, 3, fn)
+	var usage int64
+	if chat != nil {
+		usage = chat.Usage.TotalTokens
+	}
+	if err != nil {
+		return "", usage, err
+	}
+
+	return chat.Choices[0].Message.Content, usage, nil
 }
 
 func Retry[T any](ctx context.Context, retryLimit int, fn func(ctx context.Context) (*T, error)) (*T, error) {
