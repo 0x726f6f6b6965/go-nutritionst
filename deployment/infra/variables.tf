@@ -85,3 +85,33 @@ variable "db_name" {
   type        = string
   default     = "fastapi_db"
 }
+
+variable "push_msg_image_name" {
+  description = "The docker image name for the push message service."
+  type        = string
+  default     = "fastapi-app-push-msg"
+}
+
+variable "morning_msg" {
+  description = "The afternoon pushing message content"
+  type        = string
+  default     = "早安！記得紀錄今日飲食唷～"
+}
+
+variable "evening_msg" {
+  description = "The evening pushing message content"
+  type        = string
+  default     = "晚安！別忘了確認今日的營養目標！"
+}
+
+variable "morning_schedule" {
+  description = "Cron schedule for the morning message"
+  type        = string
+  default     = "0 9 * * *"
+}
+
+variable "evening_schedule" {
+  description = "Cron schedule for the evening message"
+  type        = string
+  default     = "0 21 * * *"
+}
