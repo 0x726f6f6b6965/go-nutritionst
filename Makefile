@@ -39,13 +39,29 @@ service-down:
 	@docker-compose -f ./deployment/compose.yaml --project-directory . down 
 
 .PHONY: image-push
-image-push:build-img
-	docker push ${DOCKER_HOSTNAME}/${PROJECT_ID}/${PROJECTNAME}/${IMG_NAME}:latest
+image-push: build-img image-push-line-bot image-push-push-msg
 
 .PHONY: build-img
-build-img:
+build-img: build-line-bot-img build-push-msg-img
+
+.PHONY: build-line-bot-img
+build-line-bot-img:
 	@export TARGETPLATFORM=linux/amd64 && \
-	docker build -t ${DOCKER_HOSTNAME}/${PROJECT_ID}/${PROJECTNAME}/${IMG_NAME} -f ./deployment/line-bot/Dockerfile .
+	docker build -t ${DOCKER_HOSTNAME}/${PROJECT_ID}/${PROJECTNAME}/${IMG_NAME}-bot -f ./deployment/line-bot/Dockerfile .
+
+.PHONY: image-push-line-bot
+image-push-line-bot:
+	@docker push ${DOCKER_HOSTNAME}/${PROJECT_ID}/${PROJECTNAME}/${IMG_NAME}-bot:latest
+
+.PHONY: build-push-msg-img
+build-push-msg-img:
+	@export TARGETPLATFORM=linux/amd64 && \
+	docker build -t ${DOCKER_HOSTNAME}/${PROJECT_ID}/${PROJECTNAME}/${IMG_NAME}-push-msg -f ./deployment/push-msg/Dockerfile .
+
+.PHONY: image-push-push-msg
+image-push-push-msg: 
+	@docker push ${DOCKER_HOSTNAME}/${PROJECT_ID}/${PROJECTNAME}/${IMG_NAME}-push-msg:latest
+
 
 
 .PHONY: deploy
