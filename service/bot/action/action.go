@@ -14,6 +14,8 @@ const (
 	ActionTypeSetSleep
 	ActionTypeSetWeight
 	ActionTypeSetting
+	ActionTypeChangePushMsg
+	ActionTypeSetPushMsg
 	// ActionTypeJoinUs
 	// ActionTypeGetMonth
 	// ActionTypeSetReportStart
@@ -50,6 +52,10 @@ func (a PostbackActionType) String() string {
 		return "set_weight"
 	case ActionTypeSetting:
 		return "setting"
+	case ActionTypeChangePushMsg:
+		return "change_push_msg"
+	case ActionTypeSetPushMsg:
+		return "set_push_msg"
 	default:
 		return "unknown"
 	}
@@ -85,6 +91,10 @@ func ToPostbackActionType(s string) PostbackActionType {
 		return ActionTypeSetWeight
 	case "setting":
 		return ActionTypeSetting
+	case "change_push_msg":
+		return ActionTypeChangePushMsg
+	case "set_push_msg":
+		return ActionTypeSetPushMsg
 	default:
 		return ActionTypeUnknown
 	}

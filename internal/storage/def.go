@@ -16,3 +16,8 @@ const (
 	SendRequestStatus     ColumnName = "status"
 	SendRequestFailReason ColumnName = "fail_reason"
 )
+
+const (
+	UserMorningMsgSent ColumnName = "morning_msg_sent"
+	UserEveningMsgSent ColumnName = "evening_msg_sent"
+)

@@ -109,3 +109,16 @@ func (p *Postgres) GetUsers(ctx context.Context, q *query.Query) ([]models.User,
 	}
 	return pgx.CollectRows(rows, pgx.RowToStructByName[models.User])
 }
+
+func (p *Postgres) UpdateUser(ctx context.Context, lineID string, vals ...UpdateColumn) error {
+	builder := squirrel.Update(usersTable)
+	for _, val := range vals {
+		builder = builder.Set(string(val.ColumnName), val.Value)
+	}
+	sql, args, err := builder.Where(squirrel.Eq{"line_id": lineID}).PlaceholderFormat(squirrel.Dollar).ToSql()
+	if err != nil {
+		return err
+	}
+	_, err = p.sqlexer.Exec(ctx, sql, args...)
+	return err
+}

@@ -68,6 +68,19 @@ menu = {
         "label": "改變目標",
         "data": "action=change_target"
       }
+    },
+    {
+      "bounds": {
+        "x": 837,
+        "y": 854,
+        "width": 830,
+        "height": 832
+      },
+      "action": {
+        "type": "postback",
+        "label": "設定推播",
+        "data": "action=change_push_msg"
+      }
     }
   ]
 }

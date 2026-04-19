@@ -14,6 +14,7 @@ import (
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/template"
 	"github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt"
 	"github.com/0x726f6f6b6965/go-nutritionst/service/bot/action"
+	pushMsg "github.com/0x726f6f6b6965/go-nutritionst/service/push/msg"
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/line/line-bot-sdk-go/v8/linebot"
@@ -70,6 +71,10 @@ func (h *Handler) HandlePostback(ctx context.Context, event *linebot.Event) erro
 		return h.setWeight(ctx, userID, event.ReplyToken)
 	case action.ActionTypeSetting:
 		return h.setting(ctx, event.ReplyToken)
+	case action.ActionTypeChangePushMsg:
+		return h.changePushMsg(ctx, event.ReplyToken)
+	case action.ActionTypeSetPushMsg:
+		return h.setPushMsg(ctx, userID, event.ReplyToken, datas)
 	default:
 		return h.replyText(ctx, event.ReplyToken, "unknown action")
 	}
@@ -299,4 +304,44 @@ func (h *Handler) setSleep(ctx context.Context, userID string, replyToken string
 func (h *Handler) setWeight(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordWeight)
 	return h.replyText(ctx, replyToken, "請輸入今日體重")
+}
+
+func (h *Handler) changePushMsg(ctx context.Context, replyToken string) error {
+	msg := template.GetChangePushMsg()
+	return h.replyFlex(ctx, replyToken, "change push msg", msg)
+}
+
+func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken string, datas []string) error {
+	if len(datas) < 1 {
+		msg := template.GetChangePushMsg()
+		return h.replyFlex(ctx, replyToken, "change push msg", msg)
+	}
+	typ := pushMsg.GetMsgType(datas[0])
+	if typ == pushMsg.MsgTypeUnknown {
+		return h.replyText(ctx, replyToken, "Invalid push message type")
+	}
+	user, err := h.store.GetUserByLineID(ctx, userID)
+	if err != nil {
+		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
+	}
+	var updateVals []storage.UpdateColumn
+	switch typ {
+	case pushMsg.MsgTypeMorning:
+		user.MorningMsgSent = !user.MorningMsgSent
+		updateVals = append(updateVals, storage.UpdateColumn{
+			ColumnName: storage.UserMorningMsgSent,
+			Value:      user.MorningMsgSent,
+		})
+	case pushMsg.MsgTypeEvening:
+		user.EveningMsgSent = !user.EveningMsgSent
+		updateVals = append(updateVals, storage.UpdateColumn{
+			ColumnName: storage.UserEveningMsgSent,
+			Value:      user.EveningMsgSent,
+		})
+	}
+	if err := h.store.UpdateUser(ctx, userID, updateVals...); err != nil {
+		h.logger.Error("Error updating user", zap.Error(err))
+		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
+	}
+	return h.replyText(ctx, replyToken, "更新成功")
 }
