@@ -55,3 +55,14 @@ func (m MsgType) String() string {
 		return "unknown"
 	}
 }
+
+func (m MsgType) ChineseString() string {
+	switch m {
+	case MsgTypeMorning:
+		return "早上"
+	case MsgTypeEvening:
+		return "晚間"
+	default:
+		return ""
+	}
+}

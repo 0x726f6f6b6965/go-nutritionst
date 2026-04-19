@@ -324,7 +324,11 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 	if err != nil {
 		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
-	var updateVals []storage.UpdateColumn
+	var (
+		updateVals []storage.UpdateColumn
+		result     string
+	)
+
 	switch typ {
 	case pushMsg.MsgTypeMorning:
 		user.MorningMsgSent = !user.MorningMsgSent
@@ -332,16 +336,26 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			ColumnName: storage.UserMorningMsgSent,
 			Value:      user.MorningMsgSent,
 		})
+		if user.MorningMsgSent {
+			result = "開啟"
+		} else {
+			result = "關閉"
+		}
 	case pushMsg.MsgTypeEvening:
 		user.EveningMsgSent = !user.EveningMsgSent
 		updateVals = append(updateVals, storage.UpdateColumn{
 			ColumnName: storage.UserEveningMsgSent,
 			Value:      user.EveningMsgSent,
 		})
+		if user.EveningMsgSent {
+			result = "開啟"
+		} else {
+			result = "關閉"
+		}
 	}
 	if err := h.store.UpdateUser(ctx, userID, updateVals...); err != nil {
 		h.logger.Error("Error updating user", zap.Error(err))
 		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
-	return h.replyText(ctx, replyToken, "更新成功")
+	return h.replyText(ctx, replyToken, fmt.Sprintf("更新成功, 已將%s推播功能%s", typ.ChineseString(), result))
 }
