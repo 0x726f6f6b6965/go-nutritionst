@@ -57,6 +57,7 @@ func (h *Handler) HandleImageMessage(ctx context.Context, event *linebot.Event, 
 	if err := h.store.CreateSendRequest(ctx, &models.SendRequest{
 		RequestID:   uid.String(),
 		RequestType: models.SendRequestTypeMeal,
+		LineID:      userID,
 		Status:      models.SendRequestStatusPending,
 	}); err != nil {
 		h.logger.Error("Error creating send request", zap.Error(err))

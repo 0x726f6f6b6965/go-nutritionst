@@ -196,6 +196,7 @@ func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.
 	if err := h.store.CreateSendRequest(ctx, &models.SendRequest{
 		RequestID:   uid.String(),
 		RequestType: models.SendRequestTypeBasicInfo,
+		LineID:      userID,
 		Status:      models.SendRequestStatusPending,
 	}); err != nil {
 		h.logger.Error("Error creating send request", zap.Error(err))

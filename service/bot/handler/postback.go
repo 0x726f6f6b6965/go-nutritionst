@@ -143,6 +143,7 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 	if err := h.store.CreateSendRequest(ctx, &models.SendRequest{
 		RequestID:   uid.String(),
 		RequestType: models.SendRequestTypeBasicInfo,
+		LineID:      userID,
 		Status:      models.SendRequestStatusPending,
 	}); err != nil {
 		h.logger.Error("Error creating send request", zap.Error(err))
@@ -238,6 +239,7 @@ func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.U
 	if err := h.store.CreateSendRequest(ctx, &models.SendRequest{
 		RequestID:   uid.String(),
 		RequestType: models.SendRequestTypeDaily,
+		LineID:      userID,
 		Status:      models.SendRequestStatusPending,
 	}); err != nil {
 		h.logger.Error("Error creating send request", zap.Error(err))
