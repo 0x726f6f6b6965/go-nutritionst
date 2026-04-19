@@ -16,10 +16,12 @@ func (p *Postgres) CreateSendRequest(ctx context.Context, request *models.SendRe
 	sql, args, err := squirrel.Insert(sendRequestsTable).
 		Columns(
 			"request_id",
+			"line_id",
 			"request_type",
 			"status",
 			"data").
 		Values(request.RequestID,
+			request.LineID,
 			request.RequestType,
 			request.Status,
 			request.Data).

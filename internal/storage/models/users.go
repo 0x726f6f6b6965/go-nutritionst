@@ -23,6 +23,8 @@ type User struct {
 	Age             int       `json:"age" db:"age"`
 	Gender          Gender    `json:"gender" db:"gender"`
 	MaxDailyToken   int64     `json:"max_daily_token" db:"max_daily_token"`
+	MorningMsgSent  bool      `json:"morning_msg_sent" db:"morning_msg_sent"`
+	EveningMsgSent  bool      `json:"evening_msg_sent" db:"evening_msg_sent"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }
