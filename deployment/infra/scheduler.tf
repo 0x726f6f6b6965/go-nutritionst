@@ -15,6 +15,7 @@ resource "google_project_iam_member" "scheduler_invoke_permission" {
 resource "google_cloud_run_v2_job" "morning_job" {
   name     = "${var.service_name}-morning-job"
   location = var.region
+  deletion_protection = false
 
   template {
     template {
@@ -79,6 +80,7 @@ resource "google_cloud_run_v2_job" "morning_job" {
 resource "google_cloud_run_v2_job" "evening_job" {
   name     = "${var.service_name}-evening-job"
   location = var.region
+  deletion_protection = false
 
   template {
     template {
