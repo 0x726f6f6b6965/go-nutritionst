@@ -70,6 +70,7 @@ func main() {
 		logger.Error("Unable to push message", zap.Error(err))
 		return
 	}
+	logger.Info("Success push message", zap.String("msg_type", pushMsgType.String()), zap.String("msg", pushMsg))
 }
 
 func initVar() {

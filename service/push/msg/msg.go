@@ -44,3 +44,14 @@ func GetMsgType(s string) MsgType {
 		return MsgTypeUnknown
 	}
 }
+
+func (m MsgType) String() string {
+	switch m {
+	case MsgTypeMorning:
+		return "morning"
+	case MsgTypeEvening:
+		return "evening"
+	default:
+		return "unknown"
+	}
+}
