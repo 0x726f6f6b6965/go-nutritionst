@@ -19,13 +19,16 @@ type SendRequestType int
 type SendRequestStatus int
 
 const (
-	SendRequestTypeUnknown        SendRequestType = 0
-	SendRequestTypeMeal           SendRequestType = 1
-	SendRequestTypeDaily          SendRequestType = 2
-	SendRequestTypeBroadcast      SendRequestType = 3
-	SendRequestTypeBasicInfo      SendRequestType = 4
-	SendRequestTypePushMorningMsg SendRequestType = 5
-	SendRequestTypePushEveningMsg SendRequestType = 6
+	SendRequestTypeUnknown          SendRequestType = 0
+	SendRequestTypeMeal             SendRequestType = 1
+	SendRequestTypeDaily            SendRequestType = 2
+	SendRequestTypeBroadcast        SendRequestType = 3
+	SendRequestTypeBasicInfo        SendRequestType = 4
+	SendRequestTypePushMorningMsg   SendRequestType = 5
+	SendRequestTypePushEveningMsg   SendRequestType = 6
+	SendRequestTypePushBreakfastMsg SendRequestType = 7
+	SendRequestTypePushLunchMsg     SendRequestType = 8
+	SendRequestTypePushDinnerMsg    SendRequestType = 9
 )
 
 const (

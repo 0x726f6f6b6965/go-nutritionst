@@ -128,18 +128,21 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 	gender := models.Gender(h.cache.GetGender(userID))
 
 	newUser := &models.User{
-		LineID:          userID,
-		Height:          height,
-		Weight:          weight,
-		TargetWeight:    targetWeight,
-		TargetTimeframe: targetTimeframe,
-		Age:             age,
-		Gender:          gender,
-		MaxDailyToken:   h.maxDailyToken,
-		MorningMsgSent:  true,
-		EveningMsgSent:  true,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		LineID:           userID,
+		Height:           height,
+		Weight:           weight,
+		TargetWeight:     targetWeight,
+		TargetTimeframe:  targetTimeframe,
+		Age:              age,
+		Gender:           gender,
+		MaxDailyToken:    h.maxDailyToken,
+		MorningMsgSent:   true,
+		EveningMsgSent:   true,
+		BreakfastMsgSent: true,
+		LunchMsgSent:     true,
+		DinnerMsgSent:    true,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 	if err := h.store.CreateUser(ctx, newUser); err != nil {
 		h.logger.Error("Error creating user", zap.Error(err))

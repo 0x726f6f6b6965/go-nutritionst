@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS users (
     max_daily_token BIGINT DEFAULT 0,
     morning_msg_sent BOOLEAN DEFAULT FALSE,
     evening_msg_sent BOOLEAN DEFAULT FALSE,
+    breakfast_msg_sent BOOLEAN DEFAULT FALSE,
+    lunch_msg_sent BOOLEAN DEFAULT FALSE,
+    dinner_msg_sent BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

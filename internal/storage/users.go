@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
@@ -12,6 +13,7 @@ import (
 
 const (
 	usersTable = "users"
+	TimeDiff   = -5
 )
 
 func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
@@ -27,6 +29,9 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 			"max_daily_token",
 			"morning_msg_sent",
 			"evening_msg_sent",
+			"breakfast_msg_sent",
+			"lunch_msg_sent",
+			"dinner_msg_sent",
 			"created_at",
 			"updated_at").
 		Values(user.LineID,
@@ -39,6 +44,9 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 			user.MaxDailyToken,
 			user.MorningMsgSent,
 			user.EveningMsgSent,
+			user.BreakfastMsgSent,
+			user.LunchMsgSent,
+			user.DinnerMsgSent,
 			user.CreatedAt,
 			user.UpdatedAt).
 		PlaceholderFormat(squirrel.Dollar).
@@ -121,4 +129,24 @@ func (p *Postgres) UpdateUser(ctx context.Context, lineID string, vals ...Update
 	}
 	_, err = p.sqlexer.Exec(ctx, sql, args...)
 	return err
+}
+
+func (p *Postgres) GetUsersWithNotEatMeal(ctx context.Context, q *query.Query, meal models.Meal) ([]models.User, error) {
+	builder := squirrel.Select("*").
+		From(usersTable)
+
+	q.AddFilter(squirrel.Expr(
+		fmt.Sprintf("line_id NOT IN (SELECT line_id FROM %s WHERE meal = %d AND created_at > ?)", mealHistoryTable, meal),
+		time.Now().Add(time.Hour*TimeDiff)))
+	builder = q.Where(builder)
+	sql, args, err := builder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := p.sqlexer.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowToStructByName[models.User])
 }

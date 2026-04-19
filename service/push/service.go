@@ -53,7 +53,15 @@ func (s *Service) PushMsg(ctx context.Context, req *PushMsgRequest) error {
 		q.AddFilter(squirrel.Gt{"id": startID})
 		q.SetLimit(Limit)
 		q.AddSortBy("id", false)
-		users, err := s.store.GetUsers(ctx, q)
+		var (
+			users []models.User
+			err   error
+		)
+		if req.Typ >= msg.MsgTypeBreakfast {
+			users, err = s.store.GetUsersWithNotEatMeal(ctx, q, req.Typ.GetMeal())
+		} else {
+			users, err = s.store.GetUsers(ctx, q)
+		}
 		if err != nil {
 			return err
 		}
