@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
     age INTEGER,
     gender SMALLINT,
     max_daily_token BIGINT DEFAULT 0,
+    morning_msg_sent BOOLEAN DEFAULT FALSE,
+    evening_msg_sent BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -61,6 +63,7 @@ CREATE TABLE IF NOT EXISTS send_requests (
     id BIGSERIAL PRIMARY KEY,
     request_id UUID,
     request_type SMALLINT,
+    line_id TEXT,
     status SMALLINT,
     data TEXT,
     fail_reason TEXT,
