@@ -60,7 +60,7 @@ func main() {
 		return
 	}
 
-	pushService := push.NewService(client, store)
+	pushService := push.NewService(client, store, logger)
 
 	err = pushService.PushMsg(ctx, &push.PushMsgRequest{
 		Typ: pushMsgType,

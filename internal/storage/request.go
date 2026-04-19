@@ -65,3 +65,34 @@ func (p *Postgres) UpdateSendRequest(ctx context.Context, requestID string, vals
 	_, err = p.sqlexer.Exec(ctx, sql, args...)
 	return err
 }
+
+func (p *Postgres) BatchCreateSendRequests(ctx context.Context, requests []*models.SendRequest) error {
+	if len(requests) == 0 {
+		return nil
+	}
+
+	builder := squirrel.Insert(sendRequestsTable).
+		Columns(
+			"request_id",
+			"line_id",
+			"request_type",
+			"status",
+			"data")
+
+	for _, request := range requests {
+		builder = builder.Values(
+			request.RequestID,
+			request.LineID,
+			request.RequestType,
+			request.Status,
+			request.Data)
+	}
+
+	sql, args, err := builder.PlaceholderFormat(squirrel.Dollar).ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = p.sqlexer.Exec(ctx, sql, args...)
+	return err
+}
