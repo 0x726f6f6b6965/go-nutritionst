@@ -131,6 +131,8 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 		Age:             age,
 		Gender:          gender,
 		MaxDailyToken:   h.maxDailyToken,
+		MorningMsgSent:  true,
+		EveningMsgSent:  true,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}
