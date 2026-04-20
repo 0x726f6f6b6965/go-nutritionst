@@ -266,7 +266,7 @@ func NewClient(apiKey string) *Client {
 	}
 	return &Client{
 		client:              openai.NewClient(option.WithAPIKey(apiKey)),
-		model:               openai.ChatModelGPT4oMini,
+		model:               openai.ChatModelGPT4_1Mini,
 		mealResponseSchema:  mealResponseSchema,
 		dailyResponseSchema: dailyResponseSchema,
 	}
