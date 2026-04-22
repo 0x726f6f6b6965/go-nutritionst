@@ -142,12 +142,6 @@ Tone:
 - Like real nutrition expert bestie 
 - May include emoji
 
-Output:
-- description = ONE paragraph including:
-  daily aggregation + compliance + insights + coaching
-- All content in Traditional Chinese
-- No extra text
-
 
 Aggregation
 - Sum all meal totals → day_totals
@@ -159,7 +153,7 @@ BMR (Mifflin-St Jeor):
 - male: 10W + 6.25H - 5A + 5
 - female: 10W + 6.25H - 5A - 161
 
-TDEE = BMR * activity_factor
+TDEE = BMR × activity_factor
 (default activity_factor = 1.4)
 
 Calories target:
@@ -169,16 +163,16 @@ Calories target:
 
 Protein:
 - base: 1.6 g/kg
-- fat_loss: 1.8-2.2 g/kg
+- fat_loss: 1.8–2.2 g/kg
 
 Carbs/Fat:
-- protein kcal = protein_g x 4
+- protein kcal = protein_g × 4
 - remaining kcal:
-  carbs 40-50%, fat 20-30%
+  carbs 40–50%, fat 20–30%
 - fat ≥ 0.6 g/kg
 
 Water:
-- 30-40 ml/kg
+- 30–40 ml/kg
 - if high protein → +10%
 
 
@@ -189,31 +183,32 @@ Water:
 
 
 4. Compliance
+No extra description, just compliance status for each nutrient based on target and actual intake.
 
 calories:
-- ±10% → "near"
-- > → "high"
-- < → "low"
+- ±10% → "完美"
+- > → "高"
+- < → "低"
 
 protein:
-- <90% → "insufficient"
-- 90-140% → "adequate"
-- >140% → "excess"
+- <90% → "不足"
+- 90–140% → "適量"
+- >140% → "過量"
 
 sodium:
-- ≤2300 → "ok"
-- >2300 → "high"
+- ≤2300 → "正常"
+- >2300 → "高"
 
 deltas = actual - target
 
 
 5. Insights
-- 2-5 key observations
+- 2–5 key observations
 - based on meals + distribution
 
 
 6. Coaching
-- 3-5 actionable suggestions
+- 3–5 actionable suggestions
 - practical and daily-life friendly
 
 
@@ -224,6 +219,12 @@ deltas = actual - target
 8. Constraints
 - no NaN / Infinity
 - no meaningless negative values
+
+Output:
+- description = ONE paragraph including:
+  daily aggregation + compliance + insights + coaching
+- All content must in Traditional Chinese
+- No extra text
 `
 
 type Client struct {
