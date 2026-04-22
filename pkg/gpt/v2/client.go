@@ -153,7 +153,7 @@ BMR (Mifflin-St Jeor):
 - male: 10W + 6.25H - 5A + 5
 - female: 10W + 6.25H - 5A - 161
 
-TDEE = BMR × activity_factor
+TDEE = BMR * activity_factor
 (default activity_factor = 1.4)
 
 Calories target:
@@ -163,16 +163,16 @@ Calories target:
 
 Protein:
 - base: 1.6 g/kg
-- fat_loss: 1.8–2.2 g/kg
+- fat_loss: 1.8-2.2 g/kg
 
 Carbs/Fat:
-- protein kcal = protein_g × 4
+- protein kcal = protein_g * 4
 - remaining kcal:
-  carbs 40–50%, fat 20–30%
+  carbs 40-50%, fat 20-30%
 - fat ≥ 0.6 g/kg
 
 Water:
-- 30–40 ml/kg
+- 30-40 ml/kg
 - if high protein → +10%
 
 
@@ -192,7 +192,7 @@ calories:
 
 protein:
 - <90% → "不足"
-- 90–140% → "適量"
+- 90-140% → "適量"
 - >140% → "過量"
 
 sodium:
@@ -203,12 +203,12 @@ deltas = actual - target
 
 
 5. Insights
-- 2–5 key observations
+- 2-5 key observations
 - based on meals + distribution
 
 
 6. Coaching
-- 3–5 actionable suggestions
+- 3-5 actionable suggestions
 - practical and daily-life friendly
 
 
