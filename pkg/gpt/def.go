@@ -72,3 +72,10 @@ type AIDailyResponse struct {
 	TodayCoaching     []string     `json:"today_coaching" jsonschema_description:"Provide 3-5 specific, actionable, and practical suggestions (e.g., separate sauces, supplement with protein, switch to sugar-free beverages) in Traditional Chinese."`
 	DataQualityIssues []string     `json:"data_quality_issues" jsonschema_description:"Data quality issues for today's meal in Traditional Chinese."`
 }
+
+type AITargetSuggestionResponse struct {
+	IsReasonable          bool    `json:"is_reasonable" jsonschema_description:"Whether the target weight and timeframe is reasonable."`
+	RealisticTargetWeight float64 `json:"realistic_target_weight" jsonschema_description:"Realistic target weight in kg for this user."`
+	RealisticTimeframe    float64 `json:"realistic_timeframe" jsonschema_description:"Realistic timeframe in months for this user."`
+	Suggestions           string  `json:"suggestions" jsonschema_description:"Suggestions for this user in Traditional Chinese."`
+}
