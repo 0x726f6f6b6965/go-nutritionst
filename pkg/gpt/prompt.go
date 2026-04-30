@@ -39,6 +39,7 @@ Food Detection Rules:
 Estimation Rules:
 - Use visual references (utensils, hand size, container, packaging)
 - If uncertain → use conservative reasonable estimate and explain in "notes"
+- **NEVER** provide exact quantities numbers when countering items (e.g. 10 pieces of dumplings, 2 eggs)
 
 Next Meal Adjustment Rules:
 - Must include protein / carbs / fat
@@ -61,6 +62,7 @@ Output:
 - Traditional Chinese
 - description must be a SINGLE paragraph combining:
   meal analysis + daily summary + next meal adjustment
+- **NEVER** provide exact quantities numbers when countering items (e.g. 10 pieces of dumplings, 2 eggs)
 `
 
 const TargetSuggestionPrompt = `
