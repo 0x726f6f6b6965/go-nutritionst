@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
+	"github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt"
 	"github.com/0x726f6f6b6965/go-nutritionst/service/bot/action"
 	"github.com/0x726f6f6b6965/go-nutritionst/service/push/msg"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
@@ -844,6 +845,74 @@ func GetAIMealDailyMsg(response *models.MealDaily, cost float64) *messaging_api.
 			Footer: &messaging_api.FlexBlockStyle{
 				Separator: true,
 			},
+		},
+	}
+}
+
+func GetTargetMsg(response *gpt.AITargetSuggestionResponse, target float64, timeframe int) *messaging_api.FlexBubble {
+	targetSuggestions := []struct {
+		Label string
+		Value string
+	}{
+		{
+			Label: "保持原定計劃",
+			Value: fmt.Sprintf("action=%s&data=%s",
+				action.ActionTypeTargetSuggestion.String(),
+				action.TargetSuggestionActionTypeKeepPlan.String(),
+			),
+		},
+		{
+			Label: "更改為建議計畫",
+			Value: fmt.Sprintf("action=%s&data=%s&data=%d&data=%.2f",
+				action.ActionTypeTargetSuggestion.String(),
+				action.TargetSuggestionActionTypeChangePlan.String(),
+				response.RealisticTimeframe,
+				response.RealisticTargetWeight,
+			),
+		},
+	}
+	buttons := []messaging_api.FlexComponentInterface{}
+	for _, m := range targetSuggestions {
+		buttons = append(buttons, &messaging_api.FlexButton{
+			Style:  messaging_api.FlexButtonSTYLE_LINK,
+			Height: messaging_api.FlexButtonHEIGHT_SM,
+			Action: &messaging_api.PostbackAction{
+				Label: m.Label,
+				Data:  m.Value,
+			},
+		})
+	}
+	return &messaging_api.FlexBubble{
+		Body: &messaging_api.FlexBox{
+			Layout: messaging_api.FlexBoxLAYOUT_VERTICAL,
+			Contents: []messaging_api.FlexComponentInterface{
+				&messaging_api.FlexText{
+					Text:   "目標評估與建議",
+					Weight: messaging_api.FlexTextWEIGHT_BOLD,
+					Color:  "#1DB446",
+					Size:   "sm",
+				},
+				&messaging_api.FlexText{
+					Text:   fmt.Sprintf("%d個月內達到%.1fkg", timeframe, target),
+					Weight: messaging_api.FlexTextWEIGHT_BOLD,
+					Size:   string(messaging_api.FlexTextFontSize_LG),
+					Margin: "md",
+					Wrap:   true,
+				},
+				&messaging_api.FlexText{
+					Text:   fmt.Sprintf("建議: %s", response.Suggestions),
+					Weight: messaging_api.FlexTextWEIGHT_BOLD,
+					Size:   string(messaging_api.FlexTextFontSize_LG),
+					Margin: "md",
+					Wrap:   true,
+				},
+			},
+		},
+		Footer: &messaging_api.FlexBox{
+			Layout:   messaging_api.FlexBoxLAYOUT_VERTICAL,
+			Spacing:  "sm",
+			Contents: buttons,
+			Flex:     0,
 		},
 	}
 }

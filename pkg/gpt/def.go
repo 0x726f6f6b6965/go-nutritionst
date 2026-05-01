@@ -7,7 +7,7 @@ import (
 type NutritionAPI interface {
 	GetMealInfo(ctx context.Context, mealInfo *MealInfoWithImage) (*AIMealResponse, int64, error)
 	GetMealDailyInfo(ctx context.Context, dailyInfo *DailyInfo) (*AIDailyResponse, int64, error)
-	GetTargetSuggestion(ctx context.Context, basicInfo *BasicUserInfo) (string, int64, error)
+	GetTargetSuggestion(ctx context.Context, basicInfo *BasicUserInfo) (*AITargetSuggestionResponse, int64, error)
 }
 
 type MealInfo struct {
@@ -29,7 +29,9 @@ type DailyInfo struct {
 }
 
 type BasicUserInfo struct {
-	UserProfile string `json:"-"`
+	UserProfile     string  `json:"-"`
+	TargetWeight    float64 `json:"target_weight" jsonschema_description:"Target weight in kg for this user"`
+	TargetTimeframe int     `json:"target_timeframe" jsonschema_description:"Target timeframe in months for this user"`
 }
 
 type EstNutrition struct {
@@ -76,6 +78,6 @@ type AIDailyResponse struct {
 type AITargetSuggestionResponse struct {
 	IsReasonable          bool    `json:"is_reasonable" jsonschema_description:"Whether the target weight and timeframe is reasonable."`
 	RealisticTargetWeight float64 `json:"realistic_target_weight" jsonschema_description:"Realistic target weight in kg for this user."`
-	RealisticTimeframe    float64 `json:"realistic_timeframe" jsonschema_description:"Realistic timeframe in months for this user."`
+	RealisticTimeframe    int     `json:"realistic_timeframe" jsonschema_description:"Realistic timeframe in months for this user."`
 	Suggestions           string  `json:"suggestions" jsonschema_description:"Suggestions for this user in Traditional Chinese."`
 }

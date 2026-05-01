@@ -207,7 +207,9 @@ func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.
 	h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
 	go func() {
 		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, 0, &gpt.BasicUserInfo{
-			UserProfile: user.ToProfileString(),
+			UserProfile:     user.ToProfileString(),
+			TargetWeight:    user.TargetWeight,
+			TargetTimeframe: user.TargetTimeframe,
 		}); err != nil {
 			h.logger.Error("AnalyzeMeal error", zap.Error(err))
 			sendErr := h.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
@@ -222,7 +224,7 @@ func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.
 			}
 		}
 	}()
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("目標已更新為 %.1f 公斤，預計 %d 個月達成, AI 分析中", tw, ttf))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("目標已更新為 %.1f 公斤，預計 %d 個月達成, AI 分析你的目標中...", tw, ttf))
 }
 
 func (h *Handler) recordWaterProcess(ctx context.Context, event *linebot.Event, text string) error {

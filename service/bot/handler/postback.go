@@ -75,6 +75,8 @@ func (h *Handler) HandlePostback(ctx context.Context, event *linebot.Event) erro
 		return h.changePushMsg(ctx, event.ReplyToken)
 	case action.ActionTypeSetPushMsg:
 		return h.setPushMsg(ctx, userID, event.ReplyToken, datas)
+	case action.ActionTypeTargetSuggestion:
+		return h.confirmTarget(ctx, userID, event.ReplyToken, datas)
 	default:
 		return h.replyText(ctx, event.ReplyToken, "unknown action")
 	}
@@ -162,7 +164,9 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 	h.removeRegisterProcess(userID)
 	go func() {
 		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, 0, &gpt.BasicUserInfo{
-			UserProfile: newUser.ToProfileString(),
+			UserProfile:     newUser.ToProfileString(),
+			TargetWeight:    newUser.TargetWeight,
+			TargetTimeframe: newUser.TargetTimeframe,
 		}); err != nil {
 			h.logger.Error("AnalyzeMeal error", zap.Error(err))
 			sendErr := h.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
@@ -361,4 +365,41 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	return h.replyText(ctx, replyToken, fmt.Sprintf("更新成功, 已將%s推播功能%s", typ.ChineseString(), result))
+}
+
+func (h *Handler) confirmTarget(ctx context.Context, userID string, replyToken string, datas []string) error {
+	if datas[0] == action.TargetSuggestionActionTypeKeepPlan.String() {
+		h.replyText(ctx, replyToken, "沒問題!")
+	}
+	if datas[0] == action.TargetSuggestionActionTypeChangePlan.String() {
+		if len(datas) < 3 {
+			return h.replyText(ctx, replyToken, "Invalid target suggestion")
+		}
+
+		timeFrame, err := strconv.Atoi(datas[1])
+		if err != nil {
+			return h.replyText(ctx, replyToken, "Invalid target suggestion")
+		}
+		targetWeight, err := strconv.ParseFloat(datas[2], 64)
+		if err != nil {
+			return h.replyText(ctx, replyToken, "Invalid target suggestion")
+		}
+		updateVals := []storage.UpdateColumn{
+			{
+				ColumnName: storage.UserTargetTimeframe,
+				Value:      timeFrame,
+			},
+			{
+				ColumnName: storage.UserTargetWeight,
+				Value:      targetWeight,
+			},
+		}
+		if err := h.store.UpdateUser(ctx, userID, updateVals...); err != nil {
+			h.logger.Error("Error updating user", zap.Error(err))
+			return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
+		}
+		return h.replyText(ctx, replyToken, "設定成功!")
+	}
+
+	return h.replyText(ctx, replyToken, "Error")
 }

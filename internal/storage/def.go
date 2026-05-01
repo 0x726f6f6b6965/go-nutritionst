@@ -18,6 +18,8 @@ const (
 )
 
 const (
-	UserMorningMsgSent ColumnName = "morning_msg_sent"
-	UserEveningMsgSent ColumnName = "evening_msg_sent"
+	UserMorningMsgSent  ColumnName = "morning_msg_sent"
+	UserEveningMsgSent  ColumnName = "evening_msg_sent"
+	UserTargetTimeframe ColumnName = "target_timeframe"
+	UserTargetWeight    ColumnName = "target_weight"
 )

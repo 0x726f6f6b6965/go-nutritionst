@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage"
-	v2 "github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt/v2"
+	v3 "github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt/v3"
 	"github.com/0x726f6f6b6965/go-nutritionst/service/bot"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/line/line-bot-sdk-go/v8/linebot"
@@ -58,7 +58,7 @@ func main() {
 	store := storage.NewPostgres(pool)
 
 	// GPT
-	gptClient := v2.NewClient(openaiKey)
+	gptClient := v3.NewClient(openaiKey)
 
 	// Bot Service
 	botService, err := bot.NewService(channelToken, store, gptClient,

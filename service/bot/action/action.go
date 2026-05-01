@@ -16,6 +16,7 @@ const (
 	ActionTypeSetting
 	ActionTypeChangePushMsg
 	ActionTypeSetPushMsg
+	ActionTypeTargetSuggestion
 	// ActionTypeJoinUs
 	// ActionTypeGetMonth
 	// ActionTypeSetReportStart
@@ -56,6 +57,8 @@ func (a PostbackActionType) String() string {
 		return "change_push_msg"
 	case ActionTypeSetPushMsg:
 		return "set_push_msg"
+	case ActionTypeTargetSuggestion:
+		return "target_suggestion"
 	default:
 		return "unknown"
 	}
@@ -95,6 +98,8 @@ func ToPostbackActionType(s string) PostbackActionType {
 		return ActionTypeChangePushMsg
 	case "set_push_msg":
 		return ActionTypeSetPushMsg
+	case "target_suggestion":
+		return ActionTypeTargetSuggestion
 	default:
 		return ActionTypeUnknown
 	}
@@ -142,5 +147,35 @@ func ToTextMessageActionType(s string) TextMessageActionType {
 		return TextMessageActionTypeRecordWeight
 	default:
 		return TextMessageActionTypeUnknown
+	}
+}
+
+type TargetSuggestionActionType int
+
+const (
+	TargetSuggestionActionTypeUnknown TargetSuggestionActionType = iota
+	TargetSuggestionActionTypeKeepPlan
+	TargetSuggestionActionTypeChangePlan
+)
+
+func (a TargetSuggestionActionType) String() string {
+	switch a {
+	case TargetSuggestionActionTypeKeepPlan:
+		return "keep_plan"
+	case TargetSuggestionActionTypeChangePlan:
+		return "change_plan"
+	default:
+		return "unknown"
+	}
+}
+
+func ToTargetSuggestionActionType(s string) TargetSuggestionActionType {
+	switch s {
+	case "keep_plan":
+		return TargetSuggestionActionTypeKeepPlan
+	case "change_plan":
+		return TargetSuggestionActionTypeChangePlan
+	default:
+		return TargetSuggestionActionTypeUnknown
 	}
 }

@@ -178,7 +178,7 @@ func (c *Client) GetMealDailyInfo(ctx context.Context, dailyInfo *gpt.DailyInfo)
 	return &dailyResponse, usage, nil
 }
 
-func (c *Client) GetTargetSuggestion(ctx context.Context, basicInfo *gpt.BasicUserInfo) (string, int64, error) {
+func (c *Client) GetTargetSuggestion(ctx context.Context, basicInfo *gpt.BasicUserInfo) (*gpt.AITargetSuggestionResponse, int64, error) {
 
 	fn := func(nctx context.Context) (*responses.Response, error) {
 		req := responses.ResponseNewParams{
@@ -226,10 +226,14 @@ func (c *Client) GetTargetSuggestion(ctx context.Context, basicInfo *gpt.BasicUs
 		usage = chat.Usage.TotalTokens
 	}
 	if err != nil {
-		return "", usage, err
+		return nil, usage, err
 	}
-
-	return chat.OutputText(), usage, nil
+	var targetResponse gpt.AITargetSuggestionResponse
+	err = json.Unmarshal([]byte(chat.OutputText()), &targetResponse)
+	if err != nil {
+		return nil, usage, err
+	}
+	return &targetResponse, usage, nil
 }
 
 func Retry[T any](ctx context.Context, retryLimit int, fn func(ctx context.Context) (*T, error)) (*T, error) {

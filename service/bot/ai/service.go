@@ -241,12 +241,25 @@ func (s *Service) AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID st
 		}
 		return err
 	}
-	msg := messaging_api.TextMessage{
-		Text: aiResp,
-	}
-	if err := s.sendMsg(ctx, userID, uid.String(), msg); err != nil {
-		s.logger.Error("Error sending message", zap.Error(err))
-		return err
+
+	if aiResp.IsReasonable {
+		msg := messaging_api.TextMessage{
+			Text: aiResp.Suggestions,
+		}
+		if err := s.sendMsg(ctx, userID, uid.String(), msg); err != nil {
+			s.logger.Error("Error sending message", zap.Error(err))
+			return err
+		}
+	} else {
+		respMsg := template.GetTargetMsg(aiResp, basicInfo.TargetWeight, basicInfo.TargetTimeframe)
+		msg := messaging_api.FlexMessage{
+			AltText:  "AI Suggestion",
+			Contents: respMsg,
+		}
+		if err := s.sendMsg(ctx, userID, uid.String(), msg); err != nil {
+			s.logger.Error("Error sending message", zap.Error(err))
+			return err
+		}
 	}
 	if err := s.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
 		ColumnName: storage.SendRequestStatus,
