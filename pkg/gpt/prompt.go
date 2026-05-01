@@ -39,6 +39,7 @@ Food Detection Rules:
 Estimation Rules:
 - Use visual references (utensils, hand size, container, packaging)
 - If uncertain → use conservative reasonable estimate and explain in "notes"
+- **NEVER** provide exact quantities numbers when countering items (e.g. 10 pieces of dumplings, 2 eggs)
 
 Next Meal Adjustment Rules:
 - Must include protein / carbs / fat
@@ -61,6 +62,7 @@ Output:
 - Traditional Chinese
 - description must be a SINGLE paragraph combining:
   meal analysis + daily summary + next meal adjustment
+- **NEVER** provide exact quantities numbers when countering items (e.g. 10 pieces of dumplings, 2 eggs)
 `
 
 const TargetSuggestionPrompt = `
@@ -82,11 +84,10 @@ Task:
   2. A timeframe (months)
 
 Rules:
-target is condisered with target_weight and target_timeframe combination, whether gain or lose weight:
-- If healthy + reasonable → encourage
+target MUST be condisered both target_weight and target_timeframe combination, whether gain or lose weight:
+- If reasonable → encourage
 - If aggressive → warn about pace
-- If underweight → warn about health risk
-- If both → strongly advise adjustment
+- |target_weight/timeframe| > 2 kg/month → aggressive
   
 Tone:
 - Positive, supportive, professional
