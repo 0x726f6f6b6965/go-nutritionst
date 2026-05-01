@@ -84,11 +84,10 @@ Task:
   2. A timeframe (months)
 
 Rules:
-target is condisered with target_weight and target_timeframe combination, whether gain or lose weight:
-- If healthy + reasonable → encourage
+target MUST be condisered both target_weight and target_timeframe combination, whether gain or lose weight:
+- If reasonable → encourage
 - If aggressive → warn about pace
-- If underweight → warn about health risk
-- If both → strongly advise adjustment
+- |target_weight/timeframe| > 2 kg/month → aggressive
   
 Tone:
 - Positive, supportive, professional
