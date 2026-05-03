@@ -1,3 +1,5 @@
+ALTER DATABASE nutritionist SET timezone TO 'Asia/Taipei';
+
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     line_id TEXT UNIQUE,
