@@ -10,6 +10,10 @@ type UpdateColumn struct {
 const (
 	DailyRecordTotalSleepHour ColumnName = "total_sleep_hour"
 	DailyRecordTotalWaterMl   ColumnName = "total_water_ml"
+	DailyRecordBreakfastMeals ColumnName = "breakfast_meals"
+	DailyRecordLunchMeals     ColumnName = "lunch_meals"
+	DailyRecordDinnerMeals    ColumnName = "dinner_meals"
+	DailyRecordSnackMeals     ColumnName = "snack_meals"
 )
 
 const (

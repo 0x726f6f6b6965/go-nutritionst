@@ -40,7 +40,10 @@ type MealDaily struct {
 	Date                         time.Time `json:"date" db:"date"`
 	RequestID                    string    `json:"request_id" db:"request_id"`
 	LineID                       string    `json:"line_id" db:"line_id"`
-	Meals                        int       `json:"meals" db:"meals"`
+	BreakfastMeals               int       `json:"breakfast_meals" db:"breakfast_meals"`
+	LunchMeals                   int       `json:"lunch_meals" db:"lunch_meals"`
+	DinnerMeals                  int       `json:"dinner_meals" db:"dinner_meals"`
+	SnackMeals                   int       `json:"snack_meals" db:"snack_meals"`
 	TotalCaloriesKcal            float64   `json:"total_calories_kcal" db:"total_calories_kcal"`
 	TotalProteinG                float64   `json:"total_protein_g" db:"total_protein_g"`
 	TotalCarbsG                  float64   `json:"total_carbs_g" db:"total_carbs_g"`
@@ -59,20 +62,20 @@ type MealDaily struct {
 	UpdatedAt                    time.Time `json:"updated_at" db:"updated_at"`
 }
 
-func GetMealsDescription(meals int) string {
-	snacks := meals % 10
-	breakfast := (meals / 10) % 10
-	lunch := (meals / 100) % 10
-	dinner := (meals / 1000) % 10
+func GetMealsDescription(meals *MealDaily) string {
+	snacks := meals.SnackMeals
+	breakfast := meals.BreakfastMeals
+	lunch := meals.LunchMeals
+	dinner := meals.DinnerMeals
 	description := []string{}
-	if breakfast == 1 {
-		description = append(description, "早餐")
+	if breakfast > 0 {
+		description = append(description, fmt.Sprintf("%d份早餐", breakfast))
 	}
-	if lunch == 1 {
-		description = append(description, "午餐")
+	if lunch > 0 {
+		description = append(description, fmt.Sprintf("%d份午餐", lunch))
 	}
-	if dinner == 1 {
-		description = append(description, "晚餐")
+	if dinner > 0 {
+		description = append(description, fmt.Sprintf("%d份晚餐", dinner))
 	}
 	if snacks > 0 {
 		description = append(description, fmt.Sprintf("%d份點心", snacks))

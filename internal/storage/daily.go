@@ -33,12 +33,20 @@ func (p *Postgres) CreateDailyRecord(ctx context.Context, dailyRecord *models.Da
 			"line_id",
 			"date",
 			"total_water_ml",
-			"total_sleep_hour").
+			"total_sleep_hour",
+			"breakfast_meals",
+			"lunch_meals",
+			"dinner_meals",
+			"snack_meals").
 		Values(dailyRecord.RequestID,
 			dailyRecord.LineID,
 			dailyRecord.Date,
 			dailyRecord.TotalWaterMl,
-			dailyRecord.TotalSleepHour).
+			dailyRecord.TotalSleepHour,
+			dailyRecord.BreakfastMeals,
+			dailyRecord.LunchMeals,
+			dailyRecord.DinnerMeals,
+			dailyRecord.SnackMeals).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 	if err != nil {

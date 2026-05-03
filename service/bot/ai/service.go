@@ -12,6 +12,7 @@ import (
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/template"
 	"github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt"
+	"github.com/0x726f6f6b6965/go-nutritionst/pkg/timezone"
 	"github.com/google/uuid"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 	"go.uber.org/zap"
@@ -55,8 +56,8 @@ func (s *Service) AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string,
 	}
 
 	history := getHistoryFromResp(userID, uid, mealInfo, aiResp)
-
-	if err := s.store.CreateMealHistory(ctx, history); err != nil {
+	date := timezone.GetTaipeiDate()
+	if err := s.store.CreateMealHistory(ctx, history, date, s.logger); err != nil {
 		s.logger.Error("DB Error", zap.Error(err))
 		msg := messaging_api.TextMessage{
 			Text: internalErrors.ErrInternal.Error(),
@@ -190,14 +191,31 @@ func (s *Service) AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID st
 	return nil
 }
 func getDailyHistoryFromResp(userID string, uid uuid.UUID, dailyInfo *gpt.DailyInfo, resp *gpt.AIDailyResponse) *models.MealDaily {
-	meals := make([]models.Meal, 0)
+	var (
+		breakfastMeals int
+		lunchMeals     int
+		dinnerMeals    int
+		snackMeals     int
+	)
 	for _, meal := range dailyInfo.MealsToday {
-		meals = append(meals, models.Meal(meal.Meal))
+		switch meal.Meal {
+		case int(models.MealBreakfast):
+			breakfastMeals++
+		case int(models.MealLunch):
+			lunchMeals++
+		case int(models.MealDinner):
+			dinnerMeals++
+		case int(models.MealSnack):
+			snackMeals++
+		}
 	}
 	history := &models.MealDaily{
 		RequestID:                    uid.String(),
 		LineID:                       userID,
-		Meals:                        models.GetMealsIntFromMeals(meals),
+		BreakfastMeals:               breakfastMeals,
+		LunchMeals:                   lunchMeals,
+		DinnerMeals:                  dinnerMeals,
+		SnackMeals:                   snackMeals,
 		TotalCaloriesKcal:            resp.DayTotals.CaloriesKcal,
 		TotalProteinG:                resp.DayTotals.ProteinG,
 		TotalCarbsG:                  resp.DayTotals.CarbsG,

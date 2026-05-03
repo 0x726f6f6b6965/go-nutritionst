@@ -733,7 +733,7 @@ func GetAIMealDailyMsg(response *models.MealDaily, cost float64) *messaging_api.
 					Size:   "sm",
 				},
 				&messaging_api.FlexText{
-					Text:   models.GetMealsDescription(response.Meals) + "的營養評估",
+					Text:   models.GetMealsDescription(response) + "的營養評估",
 					Weight: messaging_api.FlexTextWEIGHT_BOLD,
 					Size:   string(messaging_api.FlexTextFontSize_LG),
 					Margin: "md",

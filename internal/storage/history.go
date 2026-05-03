@@ -6,7 +6,9 @@ import (
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/query"
 	"github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"go.uber.org/zap"
 )
 
 const (
@@ -14,7 +16,18 @@ const (
 	mealDailyTable   = "meal_daily"
 )
 
-func (p *Postgres) CreateMealHistory(ctx context.Context, mealHistory *models.MealHistory) error {
+func (p *Postgres) CreateMealHistory(ctx context.Context, mealHistory *models.MealHistory, date string, logger *zap.Logger) error {
+	// use begin transaction
+	tx, err := p.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+			logger.Error("failed to rollback transaction", zap.Error(err))
+		}
+	}()
+	db := p.WithTx(tx)
 	sql, args, err := squirrel.Insert(mealHistoryTable).
 		Columns(
 			"request_id",
@@ -52,8 +65,86 @@ func (p *Postgres) CreateMealHistory(ctx context.Context, mealHistory *models.Me
 	if err != nil {
 		return err
 	}
-	_, err = p.sqlexer.Exec(ctx, sql, args...)
-	return err
+	_, err = db.Exec(ctx, sql, args...)
+	if err != nil {
+		return err
+	}
+	// get meal daily
+	sql, args, err = squirrel.Select("1").
+		From(dailyRecordTable).
+		Where(squirrel.Eq{"line_id": mealHistory.LineID}).
+		Where(squirrel.Eq{"date": date}).
+		PlaceholderFormat(squirrel.Dollar).ToSql()
+	if err != nil {
+		return err
+	}
+	rows, err := db.Query(ctx, sql, args...)
+	if err != nil {
+		return err
+	}
+	dailyRecords, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.DailyRecord])
+	if err != nil {
+		return err
+	}
+	if len(dailyRecords) == 0 {
+		// create new daily record
+		dailyRecord := models.DailyRecord{
+			RequestID: uuid.New(),
+			LineID:    mealHistory.LineID,
+			Date:      date,
+		}
+		switch mealHistory.Meal {
+		case models.MealBreakfast:
+			dailyRecord.BreakfastMeals = 1
+		case models.MealLunch:
+			dailyRecord.LunchMeals = 1
+		case models.MealDinner:
+			dailyRecord.DinnerMeals = 1
+		case models.MealSnack:
+			dailyRecord.SnackMeals = 1
+		}
+		if err := db.CreateDailyRecord(ctx, &dailyRecord); err != nil {
+			return err
+		}
+	} else {
+		// update daily record
+		dailyRecord := dailyRecords[0]
+		cols := []UpdateColumn{}
+		switch mealHistory.Meal {
+		case models.MealBreakfast:
+			dailyRecord.BreakfastMeals++
+			cols = append(cols, UpdateColumn{
+				ColumnName: DailyRecordBreakfastMeals,
+				Value:      dailyRecord.BreakfastMeals,
+			})
+		case models.MealLunch:
+			dailyRecord.LunchMeals++
+			cols = append(cols, UpdateColumn{
+				ColumnName: DailyRecordLunchMeals,
+				Value:      dailyRecord.LunchMeals,
+			})
+		case models.MealDinner:
+			dailyRecord.DinnerMeals++
+			cols = append(cols, UpdateColumn{
+				ColumnName: DailyRecordDinnerMeals,
+				Value:      dailyRecord.DinnerMeals,
+			})
+		case models.MealSnack:
+			dailyRecord.SnackMeals++
+			cols = append(cols, UpdateColumn{
+				ColumnName: DailyRecordSnackMeals,
+				Value:      dailyRecord.SnackMeals,
+			})
+		}
+		if err := db.UpdateDailyRecord(ctx, mealHistory.LineID, date, cols...); err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *Postgres) GetMealHistory(ctx context.Context, query *query.Query) ([]models.MealHistory, error) {
@@ -77,7 +168,10 @@ func (p *Postgres) CreateMealDaily(ctx context.Context, mealDaily *models.MealDa
 			"request_id",
 			"line_id",
 			"date",
-			"meals",
+			"breakfast_meals",
+			"lunch_meals",
+			"dinner_meals",
+			"snack_meals",
 			"total_calories_kcal",
 			"total_protein_g",
 			"total_carbs_g",
@@ -97,7 +191,10 @@ func (p *Postgres) CreateMealDaily(ctx context.Context, mealDaily *models.MealDa
 		Values(mealDaily.RequestID,
 			mealDaily.LineID,
 			mealDaily.Date,
-			mealDaily.Meals,
+			mealDaily.BreakfastMeals,
+			mealDaily.LunchMeals,
+			mealDaily.DinnerMeals,
+			mealDaily.SnackMeals,
 			mealDaily.TotalCaloriesKcal,
 			mealDaily.TotalProteinG,
 			mealDaily.TotalCarbsG,

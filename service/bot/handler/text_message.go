@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	internalErrors "github.com/0x726f6f6b6965/go-nutritionst/internal/errors"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage"
@@ -13,6 +12,7 @@ import (
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/query"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/template"
 	"github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt"
+	"github.com/0x726f6f6b6965/go-nutritionst/pkg/timezone"
 	"github.com/0x726f6f6b6965/go-nutritionst/service/bot/action"
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -233,8 +233,7 @@ func (h *Handler) recordWaterProcess(ctx context.Context, event *linebot.Event, 
 		return h.replyText(ctx, event.ReplyToken, "飲水量格式錯誤，請重新輸入 ex. 500")
 	}
 	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
-	now := time.Now()
-	date := now.Format("2006-01-02")
+	date := timezone.GetTaipeiDate()
 	q := query.NewQuery().AddFilter(squirrel.Eq{"line_id": event.Source.UserID}).AddFilter(squirrel.Eq{"date": date})
 	records, err := h.store.GetDailyRecord(ctx, q)
 	if err != nil {
@@ -270,8 +269,7 @@ func (h *Handler) recordSleepProcess(ctx context.Context, event *linebot.Event, 
 		return h.replyText(ctx, event.ReplyToken, "睡眠時數格式錯誤，請重新輸入 ex. 8")
 	}
 	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
-	now := time.Now()
-	date := now.Format("2006-01-02")
+	date := timezone.GetTaipeiDate()
 	q := query.NewQuery().AddFilter(squirrel.Eq{"line_id": event.Source.UserID}).AddFilter(squirrel.Eq{"date": date})
 	records, err := h.store.GetDailyRecord(ctx, q)
 	if err != nil {
