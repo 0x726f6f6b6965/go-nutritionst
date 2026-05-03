@@ -7,6 +7,7 @@ import (
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/query"
+	"github.com/0x726f6f6b6965/go-nutritionst/pkg/timezone"
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 )
@@ -135,9 +136,19 @@ func (p *Postgres) GetUsersWithNotEatMeal(ctx context.Context, q *query.Query, m
 	builder := squirrel.Select("*").
 		From(usersTable)
 
-	q.AddFilter(squirrel.Expr(
-		fmt.Sprintf("line_id NOT IN (SELECT line_id FROM %s WHERE meal = %d AND created_at > ?)", mealHistoryTable, meal),
-		time.Now().Add(time.Hour*TimeDiff)))
+	var sqlStr string
+	switch meal {
+	case models.MealBreakfast:
+		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE breakfast_meals > 0 AND date = %s", dailyRecordTable, timezone.GetTaipeiDate())
+	case models.MealLunch:
+		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE lunch_meals > 0 AND date = %s", dailyRecordTable, timezone.GetTaipeiDate())
+	case models.MealDinner:
+		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE dinner_meals > 0 AND date = %s", dailyRecordTable, timezone.GetTaipeiDate())
+	case models.MealSnack:
+		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE snack_meals > 0 AND date = %s", dailyRecordTable, timezone.GetTaipeiDate())
+	}
+
+	q.AddFilter(squirrel.Expr(fmt.Sprintf("line_id NOT IN (%s)", sqlStr)))
 	builder = q.Where(builder)
 	sql, args, err := builder.ToSql()
 	if err != nil {

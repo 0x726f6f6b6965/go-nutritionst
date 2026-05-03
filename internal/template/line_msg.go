@@ -260,6 +260,9 @@ func GetChangePushMsg() *messaging_api.FlexBubble {
 	}{
 		{"啟動/關閉 早上提示", msg.MsgTypeMorning.String()},
 		{"啟動/關閉 晚上提示", msg.MsgTypeEvening.String()},
+		// {"啟動/關閉 早餐提示", msg.MsgTypeBreakfast.String()},
+		// {"啟動/關閉 午餐提示", msg.MsgTypeLunch.String()},
+		// {"啟動/關閉 晚餐提示", msg.MsgTypeDinner.String()},
 	}
 
 	buttons := []messaging_api.FlexComponentInterface{}

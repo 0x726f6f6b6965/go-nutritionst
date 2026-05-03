@@ -359,6 +359,39 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 		} else {
 			result = "關閉"
 		}
+	case pushMsg.MsgTypeBreakfast:
+		user.BreakfastMsgSent = !user.BreakfastMsgSent
+		updateVals = append(updateVals, storage.UpdateColumn{
+			ColumnName: storage.UserBreakfastMsgSent,
+			Value:      user.BreakfastMsgSent,
+		})
+		if user.BreakfastMsgSent {
+			result = "開啟"
+		} else {
+			result = "關閉"
+		}
+	case pushMsg.MsgTypeLunch:
+		user.LunchMsgSent = !user.LunchMsgSent
+		updateVals = append(updateVals, storage.UpdateColumn{
+			ColumnName: storage.UserLunchMsgSent,
+			Value:      user.LunchMsgSent,
+		})
+		if user.LunchMsgSent {
+			result = "開啟"
+		} else {
+			result = "關閉"
+		}
+	case pushMsg.MsgTypeDinner:
+		user.DinnerMsgSent = !user.DinnerMsgSent
+		updateVals = append(updateVals, storage.UpdateColumn{
+			ColumnName: storage.UserDinnerMsgSent,
+			Value:      user.DinnerMsgSent,
+		})
+		if user.DinnerMsgSent {
+			result = "開啟"
+		} else {
+			result = "關閉"
+		}
 	}
 	if err := h.store.UpdateUser(ctx, userID, updateVals...); err != nil {
 		h.logger.Error("Error updating user", zap.Error(err))
