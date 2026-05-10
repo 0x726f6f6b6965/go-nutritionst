@@ -48,7 +48,7 @@ func NewClient(apiKey string) *Client {
 	return &Client{
 		client:                 openai.NewClient(option.WithAPIKey(apiKey)),
 		model:                  openai.ChatModelGPT4_1Mini,
-		imgModel:               openai.ChatModelGPT5_1,
+		imgModel:               openai.ChatModelGPT4oMini,
 		mealResponseSchema:     responses.ResponseFormatTextConfigParamOfJSONSchema("meal_response", AIMealResponseSchema),
 		dailyResponseSchema:    responses.ResponseFormatTextConfigParamOfJSONSchema("daily_response", AIDailyResponseSchema),
 		targetSuggestionSchema: responses.ResponseFormatTextConfigParamOfJSONSchema("target_suggestion_response", AITargetSuggestionSchema),
