@@ -217,13 +217,11 @@ func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.U
 		})
 		meals = append(meals, history.Meal)
 	}
-	mealsInt := models.GetMealsIntFromMeals(meals)
-	if mealsInt == 0 {
+	newQ := query.NewQuery().AddFilter(squirrel.Eq{"line_id": userID})
+	if models.GetMealsIntFromMeals(meals, newQ) == 0 {
 		return h.replyText(ctx, replyToken, internalErrors.ErrNoHistory.Error())
 	}
-	prev, err := h.store.GetMealDaily(ctx, query.NewQuery().
-		AddFilter(squirrel.Eq{"line_id": userID}).
-		AddFilter(squirrel.Eq{"meals": mealsInt}))
+	prev, err := h.store.GetMealDaily(ctx, newQ)
 	if err != nil {
 		h.logger.Error("Error getting history", zap.Error(err))
 		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())

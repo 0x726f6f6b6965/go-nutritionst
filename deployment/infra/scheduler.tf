@@ -13,8 +13,8 @@ resource "google_project_iam_member" "scheduler_invoke_permission" {
 
 # Morning Push Message Job
 resource "google_cloud_run_v2_job" "morning_job" {
-  name     = "${var.service_name}-morning-job"
-  location = var.region
+  name                = "${var.service_name}-morning-job"
+  location            = var.region
   deletion_protection = false
 
   template {
@@ -78,8 +78,8 @@ resource "google_cloud_run_v2_job" "morning_job" {
 
 # Evening Push Message Job
 resource "google_cloud_run_v2_job" "evening_job" {
-  name     = "${var.service_name}-evening-job"
-  location = var.region
+  name                = "${var.service_name}-evening-job"
+  location            = var.region
   deletion_protection = false
 
   template {
@@ -94,6 +94,201 @@ resource "google_cloud_run_v2_job" "evening_job" {
         env {
           name  = "PUSH_MSG"
           value = var.evening_msg
+        }
+        env {
+          name  = "CHANNEL_ACCESS_TOKEN"
+          value = var.channel_access_token
+        }
+        env {
+          name  = "CHANNEL_SECRET"
+          value = var.channel_secret
+        }
+        env {
+          name  = "POSTGRES_PASSWORD"
+          value = var.db_pwd
+        }
+        env {
+          name  = "POSTGRES_USER"
+          value = google_sql_user.user.name
+        }
+        env {
+          name  = "POSTGRES_DB"
+          value = google_sql_database.database.name
+        }
+        env {
+          name  = "POSTGRES_HOST"
+          value = google_sql_database_instance.postgres_instance.private_ip_address
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "512Mi"
+          }
+        }
+      }
+      vpc_access {
+        connector = google_vpc_access_connector.connector.id
+        egress    = "ALL_TRAFFIC"
+      }
+    }
+  }
+
+  depends_on = [
+    google_sql_user.user,
+    google_vpc_access_connector.connector,
+    google_sql_database.database
+  ]
+}
+
+# Breakfast Reminder Push Message Job
+resource "google_cloud_run_v2_job" "breakfast_job" {
+  name                = "${var.service_name}-breakfast-job"
+  location            = var.region
+  deletion_protection = false
+
+  template {
+    template {
+      containers {
+        image = "${var.registry_host}/${var.project_id}/${var.service_name}/${var.push_msg_image_name}:latest"
+
+        env {
+          name  = "PUSH_MSG_TYPE"
+          value = "breakfast"
+        }
+        env {
+          name  = "PUSH_MSG"
+          value = var.breakfast_msg
+        }
+        env {
+          name  = "CHANNEL_ACCESS_TOKEN"
+          value = var.channel_access_token
+        }
+        env {
+          name  = "CHANNEL_SECRET"
+          value = var.channel_secret
+        }
+        env {
+          name  = "POSTGRES_PASSWORD"
+          value = var.db_pwd
+        }
+        env {
+          name  = "POSTGRES_USER"
+          value = google_sql_user.user.name
+        }
+        env {
+          name  = "POSTGRES_DB"
+          value = google_sql_database.database.name
+        }
+        env {
+          name  = "POSTGRES_HOST"
+          value = google_sql_database_instance.postgres_instance.private_ip_address
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "512Mi"
+          }
+        }
+      }
+      vpc_access {
+        connector = google_vpc_access_connector.connector.id
+        egress    = "ALL_TRAFFIC"
+      }
+    }
+  }
+
+  depends_on = [
+    google_sql_user.user,
+    google_vpc_access_connector.connector,
+    google_sql_database.database
+  ]
+}
+
+# Lunch Reminder Push Message Job
+resource "google_cloud_run_v2_job" "lunch_job" {
+  name                = "${var.service_name}-lunch-job"
+  location            = var.region
+  deletion_protection = false
+
+  template {
+    template {
+      containers {
+        image = "${var.registry_host}/${var.project_id}/${var.service_name}/${var.push_msg_image_name}:latest"
+
+        env {
+          name  = "PUSH_MSG_TYPE"
+          value = "lunch"
+        }
+        env {
+          name  = "PUSH_MSG"
+          value = var.lunch_msg
+        }
+        env {
+          name  = "CHANNEL_ACCESS_TOKEN"
+          value = var.channel_access_token
+        }
+        env {
+          name  = "CHANNEL_SECRET"
+          value = var.channel_secret
+        }
+        env {
+          name  = "POSTGRES_PASSWORD"
+          value = var.db_pwd
+        }
+        env {
+          name  = "POSTGRES_USER"
+          value = google_sql_user.user.name
+        }
+        env {
+          name  = "POSTGRES_DB"
+          value = google_sql_database.database.name
+        }
+        env {
+          name  = "POSTGRES_HOST"
+          value = google_sql_database_instance.postgres_instance.private_ip_address
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "512Mi"
+          }
+        }
+      }
+      vpc_access {
+        connector = google_vpc_access_connector.connector.id
+        egress    = "ALL_TRAFFIC"
+      }
+    }
+  }
+
+  depends_on = [
+    google_sql_user.user,
+    google_vpc_access_connector.connector,
+    google_sql_database.database
+  ]
+}
+
+# Dinner Reminder Push Message Job
+resource "google_cloud_run_v2_job" "dinner_job" {
+  name                = "${var.service_name}-dinner-job"
+  location            = var.region
+  deletion_protection = false
+
+  template {
+    template {
+      containers {
+        image = "${var.registry_host}/${var.project_id}/${var.service_name}/${var.push_msg_image_name}:latest"
+
+        env {
+          name  = "PUSH_MSG_TYPE"
+          value = "dinner"
+        }
+        env {
+          name  = "PUSH_MSG"
+          value = var.dinner_msg
         }
         env {
           name  = "CHANNEL_ACCESS_TOKEN"
@@ -169,6 +364,58 @@ resource "google_cloud_scheduler_job" "evening_schedule" {
   http_target {
     http_method = "POST"
     uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.evening_job.name}:run"
+    oauth_token {
+      service_account_email = google_service_account.scheduler_sa.email
+    }
+  }
+}
+
+# Cloud Scheduler for Breakfast Job
+resource "google_cloud_scheduler_job" "breakfast_schedule" {
+  name        = "${var.service_name}-breakfast-schedule"
+  description = "Trigger the breakfast push msg Cloud Run Job"
+  schedule    = var.breakfast_schedule
+  time_zone   = "Asia/Taipei"
+  region      = var.region
+
+  http_target {
+    http_method = "POST"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.breakfast_job.name}:run"
+    oauth_token {
+      service_account_email = google_service_account.scheduler_sa.email
+    }
+  }
+}
+
+# Cloud Scheduler for Lunch Job
+resource "google_cloud_scheduler_job" "lunch_schedule" {
+  name        = "${var.service_name}-lunch-schedule"
+  description = "Trigger the lunch push msg Cloud Run Job"
+  schedule    = var.lunch_schedule
+  time_zone   = "Asia/Taipei"
+  region      = var.region
+
+  http_target {
+    http_method = "POST"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.lunch_job.name}:run"
+    oauth_token {
+      service_account_email = google_service_account.scheduler_sa.email
+    }
+  }
+}
+
+
+# Cloud Scheduler for Dinner Job
+resource "google_cloud_scheduler_job" "dinner_schedule" {
+  name        = "${var.service_name}-dinner-schedule"
+  description = "Trigger the dinner push msg Cloud Run Job"
+  schedule    = var.dinner_schedule
+  time_zone   = "Asia/Taipei"
+  region      = var.region
+
+  http_target {
+    http_method = "POST"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.dinner_job.name}:run"
     oauth_token {
       service_account_email = google_service_account.scheduler_sa.email
     }

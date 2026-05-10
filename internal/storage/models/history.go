@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/query"
+	"github.com/Masterminds/squirrel"
 )
 
 type Meal int
@@ -83,19 +86,28 @@ func GetMealsDescription(meals *MealDaily) string {
 	return strings.Join(description, "、")
 }
 
-func GetMealsIntFromMeals(meals []Meal) int {
-	mealsInt := 0
+func GetMealsIntFromMeals(meals []Meal, q *query.Query) int {
+	var (
+		breakfastMeals int
+		lunchMeals     int
+		dinnerMeals    int
+		snackMeals     int
+	)
 	for _, meal := range meals {
 		switch meal {
 		case MealBreakfast:
-			mealsInt += 10
+			breakfastMeals += 1
 		case MealLunch:
-			mealsInt += 100
+			lunchMeals += 1
 		case MealDinner:
-			mealsInt += 1000
+			dinnerMeals += 1
 		case MealSnack:
-			mealsInt += 1
+			snackMeals += 1
 		}
 	}
-	return mealsInt
+	q.AddFilter(squirrel.Eq{"breakfast_meals": breakfastMeals}).
+		AddFilter(squirrel.Eq{"lunch_meals": lunchMeals}).
+		AddFilter(squirrel.Eq{"dinner_meals": dinnerMeals}).
+		AddFilter(squirrel.Eq{"snack_meals": snackMeals})
+	return breakfastMeals + lunchMeals + dinnerMeals + snackMeals
 }

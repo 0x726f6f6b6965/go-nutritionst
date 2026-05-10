@@ -70,7 +70,7 @@ func (p *Postgres) CreateMealHistory(ctx context.Context, mealHistory *models.Me
 		return err
 	}
 	// get meal daily
-	sql, args, err = squirrel.Select("1").
+	sql, args, err = squirrel.Select("*").
 		From(dailyRecordTable).
 		Where(squirrel.Eq{"line_id": mealHistory.LineID}).
 		Where(squirrel.Eq{"date": date}).

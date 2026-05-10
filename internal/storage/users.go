@@ -139,13 +139,13 @@ func (p *Postgres) GetUsersWithNotEatMeal(ctx context.Context, q *query.Query, m
 	var sqlStr string
 	switch meal {
 	case models.MealBreakfast:
-		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE breakfast_meals > 0 AND date = %s", dailyRecordTable, timezone.GetTaipeiDate())
+		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE breakfast_meals > 0 AND date = '%s'", dailyRecordTable, timezone.GetTaipeiDate())
 	case models.MealLunch:
-		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE lunch_meals > 0 AND date = %s", dailyRecordTable, timezone.GetTaipeiDate())
+		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE lunch_meals > 0 AND date = '%s'", dailyRecordTable, timezone.GetTaipeiDate())
 	case models.MealDinner:
-		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE dinner_meals > 0 AND date = %s", dailyRecordTable, timezone.GetTaipeiDate())
+		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE dinner_meals > 0 AND date = '%s'", dailyRecordTable, timezone.GetTaipeiDate())
 	case models.MealSnack:
-		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE snack_meals > 0 AND date = %s", dailyRecordTable, timezone.GetTaipeiDate())
+		sqlStr = fmt.Sprintf("SELECT line_id FROM %s WHERE snack_meals > 0 AND date = '%s'", dailyRecordTable, timezone.GetTaipeiDate())
 	}
 
 	q.AddFilter(squirrel.Expr(fmt.Sprintf("line_id NOT IN (%s)", sqlStr)))

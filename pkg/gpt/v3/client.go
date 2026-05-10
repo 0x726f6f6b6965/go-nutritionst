@@ -17,6 +17,7 @@ import (
 type Client struct {
 	client                 openai.Client
 	model                  string
+	imgModel               string
 	mealResponseSchema     responses.ResponseFormatTextConfigUnionParam
 	dailyResponseSchema    responses.ResponseFormatTextConfigUnionParam
 	targetSuggestionSchema responses.ResponseFormatTextConfigUnionParam
@@ -47,6 +48,7 @@ func NewClient(apiKey string) *Client {
 	return &Client{
 		client:                 openai.NewClient(option.WithAPIKey(apiKey)),
 		model:                  openai.ChatModelGPT4_1Mini,
+		imgModel:               openai.ChatModelGPT5_1,
 		mealResponseSchema:     responses.ResponseFormatTextConfigParamOfJSONSchema("meal_response", AIMealResponseSchema),
 		dailyResponseSchema:    responses.ResponseFormatTextConfigParamOfJSONSchema("daily_response", AIDailyResponseSchema),
 		targetSuggestionSchema: responses.ResponseFormatTextConfigParamOfJSONSchema("target_suggestion_response", AITargetSuggestionSchema),
@@ -58,7 +60,7 @@ func (c *Client) GetMealInfo(ctx context.Context, mealInfo *gpt.MealInfoWithImag
 	imgURL := fmt.Sprintf("data:image/jpeg;base64,%s", imgBase64)
 	fn := func(nctx context.Context) (*responses.Response, error) {
 		req := responses.ResponseNewParams{
-			Model: c.model,
+			Model: c.imgModel,
 			Input: responses.ResponseNewParamsInputUnion{
 				OfInputItemList: []responses.ResponseInputItemUnionParam{
 					{

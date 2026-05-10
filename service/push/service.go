@@ -67,9 +67,10 @@ func (s *Service) PushMsg(ctx context.Context, req *PushMsgRequest) error {
 		}
 		if len(users) < Limit {
 			keepGoing = false
+		} else {
+			lastUser := users[len(users)-1]
+			startID = lastUser.ID
 		}
-		lastUser := users[len(users)-1]
-		startID = lastUser.ID
 		reqSendChain := make(chan *models.SendRequest, Limit)
 		for _, user := range users {
 			g.Go(func() error {

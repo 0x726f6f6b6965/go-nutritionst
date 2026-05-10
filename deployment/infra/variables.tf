@@ -104,6 +104,24 @@ variable "evening_msg" {
   default     = "晚安！別忘了確認今日的營養目標！"
 }
 
+variable "breakfast_msg" {
+  description = "The breakfast pushing message content"
+  type        = string
+  default     = "早安！記得紀錄今日飲食唷～"
+}
+
+variable "lunch_msg" {
+  description = "The lunch pushing message content"
+  type        = string
+  default     = "午安！記得紀錄今日飲食唷～"
+}
+
+variable "dinner_msg" {
+  description = "The dinner pushing message content"
+  type        = string
+  default     = "晚安！別忘了確認今日的營養目標！"
+}
+
 variable "morning_schedule" {
   description = "Cron schedule for the morning message"
   type        = string
@@ -114,4 +132,22 @@ variable "evening_schedule" {
   description = "Cron schedule for the evening message"
   type        = string
   default     = "0 21 * * *"
+}
+
+variable "breakfast_schedule" {
+  description = "Cron schedule for the breakfast message"
+  type        = string
+  default     = "0 10 * * *"
+}
+
+variable "lunch_schedule" {
+  description = "Cron schedule for the lunch message"
+  type        = string
+  default     = "0 13 * * *"
+}
+
+variable "dinner_schedule" {
+  description = "Cron schedule for the dinner message"
+  type        = string
+  default     = "0 19 * * *"
 }
