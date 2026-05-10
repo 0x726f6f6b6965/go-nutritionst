@@ -50,7 +50,7 @@ func (h *Handler) HandleTextMessage(ctx context.Context, event *linebot.Event, m
 		// Registered user: Meal Logic
 		meal := h.cache.GetMeal(userID)
 		if meal == 0 {
-			return h.replyText(ctx, event.ReplyToken, "請點擊下方選單開始上傳餐點")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgUploadMealIntro.String())
 		}
 
 		h.cache.SetMealDescription(userID, text)
@@ -58,10 +58,10 @@ func (h *Handler) HandleTextMessage(ctx context.Context, event *linebot.Event, m
 		mealName := getMealName(meal)
 
 		vars := []template.Variable{
-			{Name: "餐點", Value: mealName},
-			{Name: "名稱", Value: text},
+			{Name: DescriptionMsgMeal.String(), Value: mealName},
+			{Name: DescriptionMsgMealName.String(), Value: text},
 		}
-		msg := template.GetCheckMsg("上傳餐點",
+		msg := template.GetCheckMsg(DescriptionMsgUploadMeal.String(),
 			vars,
 			[]string{fmt.Sprintf("action=%s&data=y", action.ActionTypeCheckDescript.String()),
 				fmt.Sprintf("action=%s&data=n", action.ActionTypeCheckDescript.String())})
@@ -75,82 +75,82 @@ func (h *Handler) addUserProcess(ctx context.Context, event *linebot.Event, text
 
 	if !h.cache.GetRegisterProcess(userID) {
 		h.cache.SetRegisterProcess(userID, true)
-		return h.replyText(ctx, event.ReplyToken, "歡迎使用營養師機器人，請依序輸入您的身高(公分)、體重(公斤)、年齡、性別(男/女)以完成註冊\n\n請輸入身高(公分) ex. 175.5")
+		return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("%s\n\n%s", DescriptionMsgWelcomeSignUp.String(), DescriptionMsgAskHeight.String()))
 	}
 
 	if h.cache.GetHeight(userID) == 0 {
 		height, err := strconv.ParseFloat(text, 64)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, "身高格式錯誤，請重新輸入 ex. 175.5")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgHeightFormatError.String())
 		}
 		h.cache.SetHeight(userID, height)
-		return h.replyText(ctx, event.ReplyToken, "請輸入體重(公斤) ex. 70.5")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskWeight.String())
 	}
 
 	if h.cache.GetWeight(userID) == 0 {
 		w, err := strconv.ParseFloat(text, 64)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, "體重格式錯誤，請重新輸入 ex. 70.5")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgWeightFormatError.String())
 		}
 		h.cache.SetWeight(userID, w)
-		return h.replyText(ctx, event.ReplyToken, "請輸入年齡 ex. 25")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskAge.String())
 	}
 
 	if h.cache.GetAge(userID) == 0 {
 		a, err := strconv.Atoi(text)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, "年齡格式錯誤，請重新輸入 ex. 25")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgAgeFormatError.String())
 		}
 		h.cache.SetAge(userID, a)
-		return h.replyText(ctx, event.ReplyToken, "請輸入目標體重 ex. 65.0")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskSetTargetWeight.String())
 	}
 
 	if h.cache.GetTargetWeight(userID) == 0 {
 		tw, err := strconv.ParseFloat(text, 64)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, "目標體重格式錯誤，請重新輸入 ex. 65.0")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgTargetWeightFormatError.String())
 		}
 		h.cache.SetTargetWeight(userID, tw)
-		return h.replyText(ctx, event.ReplyToken, "請輸入目標時間(月) ex. 3")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskSetTargetTime.String())
 	}
 
 	if h.cache.GetTargetTimeframe(userID) == 0 {
 		ttf, err := strconv.Atoi(text)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, "目標時間格式錯誤，請重新輸入 ex. 3")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgTargetTimeFormatError.String())
 		}
 		h.cache.SetTargetTimeframe(userID, ttf)
-		return h.replyText(ctx, event.ReplyToken, "請輸入性別(男/女)")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskSetGender.String())
 	}
 
 	if h.cache.GetGender(userID) == 0 {
 		t := strings.TrimSpace(text)
 		var g models.Gender
 		switch t {
-		case "男":
+		case DescriptionMsgMale.String():
 			g = models.GenderMale
-		case "女":
+		case DescriptionMsgFemale.String():
 			g = models.GenderFemale
 		default:
-			return h.replyText(ctx, event.ReplyToken, "性別格式錯誤，請重新輸入(男/女)")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgGenderFormatError.String())
 		}
 		h.cache.SetGender(userID, int(g))
 
 		// Confirm Msg
-		genderStr := "男"
+		genderStr := DescriptionMsgMale.String()
 		if g == models.GenderFemale {
-			genderStr = "女"
+			genderStr = DescriptionMsgFemale.String()
 		}
 
 		vars := []template.Variable{
-			{Name: "性別", Value: genderStr},
-			{Name: "身高", Value: fmt.Sprintf("%.1f 公分", h.cache.GetHeight(userID))},
-			{Name: "體重", Value: fmt.Sprintf("%.1f 公斤", h.cache.GetWeight(userID))},
-			{Name: "年齡", Value: fmt.Sprintf("%d 歲", h.cache.GetAge(userID))},
-			{Name: "目標體重", Value: fmt.Sprintf("%.1f 公斤", h.cache.GetTargetWeight(userID))},
-			{Name: "目標時間", Value: fmt.Sprintf("%d 個月", h.cache.GetTargetTimeframe(userID))},
+			{Name: DescriptionMsgGender.String(), Value: genderStr},
+			{Name: DescriptionMsgHeight.String(), Value: fmt.Sprintf("%.1f 公分", h.cache.GetHeight(userID))},
+			{Name: DescriptionMsgWeight.String(), Value: fmt.Sprintf("%.1f 公斤", h.cache.GetWeight(userID))},
+			{Name: DescriptionMsgAge.String(), Value: fmt.Sprintf("%d 歲", h.cache.GetAge(userID))},
+			{Name: DescriptionMsgTargetWeight.String(), Value: fmt.Sprintf("%.1f 公斤", h.cache.GetTargetWeight(userID))},
+			{Name: DescriptionMsgTargetTime.String(), Value: fmt.Sprintf("%d 個月", h.cache.GetTargetTimeframe(userID))},
 		}
-		msg := template.GetCheckMsg("基本資料", vars, []string{"action=check_basic_info&data=y", "action=check_basic_info&data=n"})
+		msg := template.GetCheckMsg(DescriptionMsgBasicInfo.String(), vars, []string{"action=check_basic_info&data=y", "action=check_basic_info&data=n"})
 		return h.replyFlex(ctx, event.ReplyToken, "basic info", msg)
 	}
 
@@ -167,15 +167,15 @@ func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.
 	if h.cache.GetTargetWeight(userID) == 0 {
 		tw, err = strconv.ParseFloat(text, 64)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, "目標體重格式錯誤，請重新輸入 ex. 65.0")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgTargetWeightFormatError.String())
 		}
 		h.cache.SetTargetWeight(userID, tw)
-		return h.replyText(ctx, event.ReplyToken, "請輸入目標時間(月) ex. 3")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskSetTargetTime.String())
 	}
 	if h.cache.GetTargetTimeframe(userID) == 0 {
 		ttf, err = strconv.Atoi(text)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, "目標時間格式錯誤，請重新輸入 ex. 3")
+			return h.replyText(ctx, event.ReplyToken, DescriptionMsgTargetTimeFormatError.String())
 		}
 	}
 	tw = h.cache.GetTargetWeight(userID)
@@ -224,13 +224,13 @@ func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.
 			}
 		}
 	}()
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("目標已更新為 %.1f 公斤，預計 %d 個月達成, AI 分析你的目標中...", tw, ttf))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("%s%s", fmt.Sprintf(DescriptionMsgTargetWeightUpdate.String(), tw, ttf), DescriptionMsgAIAnalyze.String()))
 }
 
 func (h *Handler) recordWaterProcess(ctx context.Context, event *linebot.Event, text string) error {
 	water, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		return h.replyText(ctx, event.ReplyToken, "飲水量格式錯誤，請重新輸入 ex. 500")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgWaterFormatError.String())
 	}
 	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
 	date := timezone.GetTaipeiDate()
@@ -260,13 +260,13 @@ func (h *Handler) recordWaterProcess(ctx context.Context, event *linebot.Event, 
 		}
 	}
 
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("飲水量已更新 %.1f 毫升", water))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(DescriptionMsgWaterUpdate.String(), water))
 }
 
 func (h *Handler) recordSleepProcess(ctx context.Context, event *linebot.Event, text string) error {
 	sleep, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		return h.replyText(ctx, event.ReplyToken, "睡眠時數格式錯誤，請重新輸入 ex. 8")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgSleepFormatError.String())
 	}
 	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
 	date := timezone.GetTaipeiDate()
@@ -296,18 +296,18 @@ func (h *Handler) recordSleepProcess(ctx context.Context, event *linebot.Event, 
 		}
 	}
 
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("睡眠時數已更新 %.1f 小時", sleep))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(DescriptionMsgSleepUpdate.String(), sleep))
 }
 
 func (h *Handler) recordWeightProcess(ctx context.Context, event *linebot.Event, text string) error {
 	w, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		return h.replyText(ctx, event.ReplyToken, "體重格式錯誤，請重新輸入 ex. 70.5")
+		return h.replyText(ctx, event.ReplyToken, DescriptionMsgWeightFormatError.String())
 	}
 	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
 	if err := h.store.UpdateUserWeight(ctx, event.Source.UserID, w); err != nil {
 		h.logger.Error("Error updating weight", zap.Error(err))
 		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
 	}
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("體重已更新 %.1f 公斤", w))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(DescriptionMsgWeightUpdate.String(), w))
 }

@@ -108,5 +108,5 @@ func (h *Handler) HandleImageMessage(ctx context.Context, event *linebot.Event, 
 			}
 		}
 	}()
-	return h.replyText(ctx, event.ReplyToken, "AI 分析中，請稍後")
+	return h.replyText(ctx, event.ReplyToken, DescriptionMsgAIAnalyze.String())
 }

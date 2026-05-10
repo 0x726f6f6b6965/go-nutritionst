@@ -41,6 +41,10 @@ var (
 		Code:    10,
 		Message: "end date before start date",
 	}
+	ErrInvalidTargetSuggestion = &InternalError{
+		Code:    11,
+		Message: "invalid target suggestion",
+	}
 )
 
 type InternalError struct {

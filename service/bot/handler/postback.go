@@ -78,7 +78,8 @@ func (h *Handler) HandlePostback(ctx context.Context, event *linebot.Event) erro
 	case action.ActionTypeTargetSuggestion:
 		return h.confirmTarget(ctx, userID, event.ReplyToken, datas)
 	default:
-		return h.replyText(ctx, event.ReplyToken, "unknown action")
+		h.logger.Error("Unknown action type", zap.String("action_type", values.Get("action")))
+		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
 	}
 }
 
@@ -91,7 +92,7 @@ func (h *Handler) setMeal(ctx context.Context, userID string, replyToken string,
 		}
 		h.cache.SetMeal(userID, mealInt)
 		mealName := getMealName(mealInt)
-		return h.replyText(ctx, replyToken, fmt.Sprintf("請輸入%s餐點名稱", mealName))
+		return h.replyText(ctx, replyToken, fmt.Sprintf(DescriptionMsgAskSendMealName.String(), mealName))
 	}
 	return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 }
@@ -101,8 +102,8 @@ func (h *Handler) checkDescript(ctx context.Context, userID string, replyToken s
 		meal := h.cache.GetMeal(userID)
 		desc := h.cache.GetMealDescription(userID)
 		vars := []template.Variable{
-			{Name: "餐點", Value: getMealName(meal)},
-			{Name: "名稱", Value: desc},
+			{Name: DescriptionMsgMeal.String(), Value: getMealName(meal)},
+			{Name: DescriptionMsgMealName.String(), Value: desc},
 		}
 		msg := template.GetUploadMsg(vars)
 		return h.replyFlex(ctx, replyToken, "upload img", msg)
@@ -181,7 +182,7 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 			}
 		}
 	}()
-	return h.replyText(ctx, replyToken, "註冊成功! AI 分析目標中，請稍後")
+	return h.replyText(ctx, replyToken, fmt.Sprintf("%s%s", DescriptionMsgSignUpSuccess.String(), DescriptionMsgAIAnalyze.String()))
 }
 
 func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.User, replyToken string) error {
@@ -273,7 +274,7 @@ func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.U
 			}
 		}
 	}()
-	return h.replyText(ctx, replyToken, "AI 分析中，請稍後")
+	return h.replyText(ctx, replyToken, DescriptionMsgAIAnalyze.String())
 }
 
 func (h *Handler) removeRegisterProcess(userID string) {
@@ -293,22 +294,22 @@ func (h *Handler) setting(ctx context.Context, replyToken string) error {
 
 func (h *Handler) changeTarget(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeSetTarget)
-	return h.replyText(ctx, replyToken, "請輸入新的目標體重(公斤)")
+	return h.replyText(ctx, replyToken, DescriptionMsgAskSetNewTargetWeight.String())
 }
 
 func (h *Handler) setWater(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordWater)
-	return h.replyText(ctx, replyToken, "請輸入今日飲水量")
+	return h.replyText(ctx, replyToken, DescriptionMsgAskSendWater.String())
 }
 
 func (h *Handler) setSleep(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordSleep)
-	return h.replyText(ctx, replyToken, "請輸入今日睡眠時數")
+	return h.replyText(ctx, replyToken, DescriptionMsgAskSendSleep.String())
 }
 
 func (h *Handler) setWeight(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordWeight)
-	return h.replyText(ctx, replyToken, "請輸入今日體重")
+	return h.replyText(ctx, replyToken, DescriptionMsgAskSendWeight.String())
 }
 
 func (h *Handler) changePushMsg(ctx context.Context, replyToken string) error {
@@ -323,7 +324,8 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 	}
 	typ := pushMsg.GetMsgType(datas[0])
 	if typ == pushMsg.MsgTypeUnknown {
-		return h.replyText(ctx, replyToken, "Invalid push message type")
+		h.logger.Error("Invalid push message type", zap.String("user_id", userID), zap.Strings("datas", datas))
+		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
 	user, err := h.store.GetUserByLineID(ctx, userID)
 	if err != nil {
@@ -342,9 +344,9 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.MorningMsgSent,
 		})
 		if user.MorningMsgSent {
-			result = "開啟"
+			result = DescriptionMsgOpen.String()
 		} else {
-			result = "關閉"
+			result = DescriptionMsgClose.String()
 		}
 	case pushMsg.MsgTypeEvening:
 		user.EveningMsgSent = !user.EveningMsgSent
@@ -353,9 +355,9 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.EveningMsgSent,
 		})
 		if user.EveningMsgSent {
-			result = "開啟"
+			result = DescriptionMsgOpen.String()
 		} else {
-			result = "關閉"
+			result = DescriptionMsgClose.String()
 		}
 	case pushMsg.MsgTypeBreakfast:
 		user.BreakfastMsgSent = !user.BreakfastMsgSent
@@ -364,9 +366,9 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.BreakfastMsgSent,
 		})
 		if user.BreakfastMsgSent {
-			result = "開啟"
+			result = DescriptionMsgOpen.String()
 		} else {
-			result = "關閉"
+			result = DescriptionMsgClose.String()
 		}
 	case pushMsg.MsgTypeLunch:
 		user.LunchMsgSent = !user.LunchMsgSent
@@ -375,9 +377,9 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.LunchMsgSent,
 		})
 		if user.LunchMsgSent {
-			result = "開啟"
+			result = DescriptionMsgOpen.String()
 		} else {
-			result = "關閉"
+			result = DescriptionMsgClose.String()
 		}
 	case pushMsg.MsgTypeDinner:
 		user.DinnerMsgSent = !user.DinnerMsgSent
@@ -386,34 +388,34 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.DinnerMsgSent,
 		})
 		if user.DinnerMsgSent {
-			result = "開啟"
+			result = DescriptionMsgOpen.String()
 		} else {
-			result = "關閉"
+			result = DescriptionMsgClose.String()
 		}
 	}
 	if err := h.store.UpdateUser(ctx, userID, updateVals...); err != nil {
 		h.logger.Error("Error updating user", zap.Error(err))
 		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
-	return h.replyText(ctx, replyToken, fmt.Sprintf("更新成功, 已將%s推播功能%s", typ.ChineseString(), result))
+	return h.replyText(ctx, replyToken, fmt.Sprintf(DescriptionMsgUpdateAlermSuccess.String(), typ.ChineseString(), result))
 }
 
 func (h *Handler) confirmTarget(ctx context.Context, userID string, replyToken string, datas []string) error {
 	if datas[0] == action.TargetSuggestionActionTypeKeepPlan.String() {
-		h.replyText(ctx, replyToken, "沒問題!")
+		h.replyText(ctx, replyToken, DescriptionMsgNoProblem.String())
 	}
 	if datas[0] == action.TargetSuggestionActionTypeChangePlan.String() {
 		if len(datas) < 3 {
-			return h.replyText(ctx, replyToken, "Invalid target suggestion")
+			return h.replyText(ctx, replyToken, internalErrors.ErrInvalidTargetSuggestion.Error())
 		}
 
 		timeFrame, err := strconv.Atoi(datas[1])
 		if err != nil {
-			return h.replyText(ctx, replyToken, "Invalid target suggestion")
+			return h.replyText(ctx, replyToken, internalErrors.ErrInvalidTargetSuggestion.Error())
 		}
 		targetWeight, err := strconv.ParseFloat(datas[2], 64)
 		if err != nil {
-			return h.replyText(ctx, replyToken, "Invalid target suggestion")
+			return h.replyText(ctx, replyToken, internalErrors.ErrInvalidTargetSuggestion.Error())
 		}
 		updateVals := []storage.UpdateColumn{
 			{
@@ -429,8 +431,8 @@ func (h *Handler) confirmTarget(ctx context.Context, userID string, replyToken s
 			h.logger.Error("Error updating user", zap.Error(err))
 			return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 		}
-		return h.replyText(ctx, replyToken, "設定成功!")
+		return h.replyText(ctx, replyToken, DescriptionMsgSetUpSuccess.String())
 	}
 
-	return h.replyText(ctx, replyToken, "Error")
+	return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 }
