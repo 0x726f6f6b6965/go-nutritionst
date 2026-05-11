@@ -54,6 +54,7 @@ func NewService(channelToken string, store *storage.Postgres, gpt gpt.NutritionA
 	aiAPI := ai.NewService(s.store, s.cache, gpt, s.sendMsg, s.logger)
 	handler := handler.NewHandler(s.store,
 		s.cache,
+		s.lineClient,
 		s.blobClient,
 		aiAPI,
 		s.replyText,

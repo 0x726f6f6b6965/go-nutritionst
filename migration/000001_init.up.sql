@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     age INTEGER,
     gender SMALLINT,
     max_daily_token BIGINT DEFAULT 0,
+    name TEXT DEFAULT '',
     morning_msg_sent BOOLEAN DEFAULT FALSE,
     evening_msg_sent BOOLEAN DEFAULT FALSE,
     breakfast_msg_sent BOOLEAN DEFAULT FALSE,

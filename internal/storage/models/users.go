@@ -16,6 +16,7 @@ const (
 type User struct {
 	ID               int       `json:"id" db:"id"`
 	LineID           string    `json:"line_id" db:"line_id"`
+	Name             string    `json:"name" db:"name"`
 	Height           float64   `json:"height" db:"height"`
 	Weight           float64   `json:"weight" db:"weight"`
 	TargetWeight     float64   `json:"target_weight" db:"target_weight"`

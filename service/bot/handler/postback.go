@@ -129,9 +129,16 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 	targetTimeframe := h.cache.GetTargetTimeframe(userID)
 	age := h.cache.GetAge(userID)
 	gender := models.Gender(h.cache.GetGender(userID))
-
+	name := ""
+	profile, err := h.lineClient.GetProfile(userID)
+	if err != nil {
+		h.logger.Error("Error getting user profile", zap.Error(err))
+	} else {
+		name = profile.DisplayName
+	}
 	newUser := &models.User{
 		LineID:           userID,
+		Name:             name,
 		Height:           height,
 		Weight:           weight,
 		TargetWeight:     targetWeight,

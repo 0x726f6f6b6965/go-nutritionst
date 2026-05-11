@@ -83,18 +83,23 @@ func (s *Service) PushMsg(ctx context.Context, req *PushMsgRequest) error {
 					LineID:      user.LineID,
 					RequestType: req.Typ.GetRequestType(),
 				}
-				profile, err := s.lineClient.GetProfile(user.LineID)
-				if err != nil {
-					sendRequest.Status = models.SendRequestStatusFailed
-					sendRequest.Error = err.Error()
-					reqSendChain <- sendRequest
-					return err
+				if user.Name == "" {
+					// fill back user name
+					profile, err := s.lineClient.GetProfile(user.LineID)
+					if err != nil {
+						sendRequest.Status = models.SendRequestStatusFailed
+						sendRequest.Error = err.Error()
+						reqSendChain <- sendRequest
+						return err
+					}
+					s.store.UpdateUser(ctx, user.LineID, storage.UpdateColumn{ColumnName: storage.UserName, Value: profile.DisplayName})
+					user.Name = profile.DisplayName
 				}
 				pushMsg := &messaging_api.PushMessageRequest{
 					To: user.LineID,
 					Messages: []messaging_api.MessageInterface{
 						&messaging_api.TextMessageV2{
-							Text: fmt.Sprintf("Hi %s, %s", profile.DisplayName, req.Msg),
+							Text: fmt.Sprintf("Hi %s, %s", user.Name, req.Msg),
 						},
 					},
 				}

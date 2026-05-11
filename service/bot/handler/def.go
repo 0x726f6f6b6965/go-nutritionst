@@ -24,6 +24,7 @@ type HandlerInterface interface {
 type Handler struct {
 	store         *storage.Postgres
 	cache         *cache.UserContext
+	lineClient    *messaging_api.MessagingApiAPI
 	blobClient    *messaging_api.MessagingApiBlobAPI
 	aiAPI         ai.NutritionAPI
 	replyText     func(_ context.Context, replyToken, text string) error
@@ -35,6 +36,7 @@ type Handler struct {
 
 func NewHandler(store *storage.Postgres,
 	cache *cache.UserContext,
+	lineClient *messaging_api.MessagingApiAPI,
 	blobClient *messaging_api.MessagingApiBlobAPI,
 	aiAPI ai.NutritionAPI,
 	replyText func(_ context.Context, replyToken, text string) error,
@@ -45,6 +47,7 @@ func NewHandler(store *storage.Postgres,
 	return &Handler{
 		store:         store,
 		cache:         cache,
+		lineClient:    lineClient,
 		blobClient:    blobClient,
 		replyText:     replyText,
 		replyFlex:     replyFlex,

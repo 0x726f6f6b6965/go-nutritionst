@@ -14,13 +14,13 @@ import (
 
 const (
 	usersTable = "users"
-	TimeDiff   = -5
 )
 
 func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 	sql, args, err := squirrel.Insert(usersTable).
 		Columns(
 			"line_id",
+			"name",
 			"height",
 			"weight",
 			"target_weight",
@@ -36,6 +36,7 @@ func (p *Postgres) CreateUser(ctx context.Context, user *models.User) error {
 			"created_at",
 			"updated_at").
 		Values(user.LineID,
+			user.Name,
 			user.Height,
 			user.Weight,
 			user.TargetWeight,

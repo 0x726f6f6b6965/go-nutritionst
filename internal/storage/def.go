@@ -29,4 +29,5 @@ const (
 	UserDinnerMsgSent    ColumnName = "dinner_msg_sent"
 	UserTargetTimeframe  ColumnName = "target_timeframe"
 	UserTargetWeight     ColumnName = "target_weight"
+	UserName             ColumnName = "name"
 )
