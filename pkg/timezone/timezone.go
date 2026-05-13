@@ -3,7 +3,8 @@ package timezone
 import "time"
 
 func GetTaipeiNow() time.Time {
-	loc, _ := time.LoadLocation("Asia/Taipei")
+	// use CST(China Standard Time)
+	loc := time.FixedZone("CST", 8*3600)
 	return time.Now().In(loc)
 }
 
