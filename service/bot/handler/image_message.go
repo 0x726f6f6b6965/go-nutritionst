@@ -83,18 +83,18 @@ func (h *Handler) HandleImageMessage(ctx context.Context, event *linebot.Event, 
 			LineID:    userID,
 			Usage:     0,
 			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
 		}
 	}
-	if time.Since(usedToken.UpdatedAt) > 24*time.Hour {
+	if time.Since(usedToken.CreatedAt) > 24*time.Hour {
 		usedToken.Usage = 0
+		usedToken.CreatedAt = time.Now()
 	}
 	if usedToken.Usage >= h.maxDailyToken {
 		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrOutOfDailyToken.Error())
 	}
 
 	go func() {
-		if err := h.aiAPI.AnalyzeMeal(ctx, uid, userID, usedToken.Usage, mealInfo); err != nil {
+		if err := h.aiAPI.AnalyzeMeal(ctx, uid, userID, usedToken, mealInfo); err != nil {
 			h.logger.Error("AnalyzeMeal error", zap.Error(err))
 			sendErr := h.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
 				ColumnName: storage.SendRequestStatus,

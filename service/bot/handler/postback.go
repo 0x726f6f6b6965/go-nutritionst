@@ -171,7 +171,12 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 	}
 	h.removeRegisterProcess(userID)
 	go func() {
-		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, 0, &gpt.BasicUserInfo{
+		usedToken := &models.Usage{
+			LineID:    userID,
+			Usage:     0,
+			CreatedAt: time.Now(),
+		}
+		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, usedToken, &gpt.BasicUserInfo{
 			UserProfile:     newUser.ToProfileString(),
 			TargetWeight:    newUser.TargetWeight,
 			TargetTimeframe: newUser.TargetTimeframe,
@@ -249,8 +254,9 @@ func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.U
 		h.logger.Error("Error getting usage", zap.Error(err))
 		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
-	if time.Since(usedToken.UpdatedAt) > 24*time.Hour {
+	if time.Since(usedToken.CreatedAt) > 24*time.Hour {
 		usedToken.Usage = 0
+		usedToken.CreatedAt = time.Now()
 	}
 	if usedToken.Usage >= h.maxDailyToken {
 		return h.replyText(ctx, replyToken, internalErrors.ErrOutOfDailyToken.Error())
@@ -267,7 +273,7 @@ func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.U
 	}
 
 	go func() {
-		if err := h.aiAPI.AnalyzeDailyMeal(ctx, uid, userID, usedToken.Usage, dailyInfo); err != nil {
+		if err := h.aiAPI.AnalyzeDailyMeal(ctx, uid, userID, usedToken, dailyInfo); err != nil {
 			h.logger.Error("AnalyzeMeal error", zap.Error(err))
 			sendErr := h.store.UpdateSendRequest(ctx, uid.String(), storage.UpdateColumn{
 				ColumnName: storage.SendRequestStatus,

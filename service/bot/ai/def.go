@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage"
+	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage/models"
 	"github.com/0x726f6f6b6965/go-nutritionst/pkg/cache"
 	"github.com/0x726f6f6b6965/go-nutritionst/pkg/gpt"
 	"github.com/google/uuid"
@@ -14,9 +15,9 @@ import (
 var _ NutritionAPI = (*Service)(nil)
 
 type NutritionAPI interface {
-	AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, mealInfo *gpt.MealInfoWithImage) error
-	AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, dailyInfo *gpt.DailyInfo) error
-	AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, basicInfo *gpt.BasicUserInfo) error
+	AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken *models.Usage, mealInfo *gpt.MealInfoWithImage) error
+	AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken *models.Usage, dailyInfo *gpt.DailyInfo) error
+	AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID string, usedToken *models.Usage, basicInfo *gpt.BasicUserInfo) error
 }
 
 type Service struct {

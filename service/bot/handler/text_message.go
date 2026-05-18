@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	internalErrors "github.com/0x726f6f6b6965/go-nutritionst/internal/errors"
 	"github.com/0x726f6f6b6965/go-nutritionst/internal/storage"
@@ -206,7 +207,12 @@ func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.
 	h.cache.DeleteTargetTimeframe(userID)
 	h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
 	go func() {
-		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, 0, &gpt.BasicUserInfo{
+		usedToken := &models.Usage{
+			LineID:    userID,
+			Usage:     0,
+			CreatedAt: time.Now(),
+		}
+		if err := h.aiAPI.AnalyzeBasicInfo(ctx, uid, userID, usedToken, &gpt.BasicUserInfo{
 			UserProfile:     user.ToProfileString(),
 			TargetWeight:    user.TargetWeight,
 			TargetTimeframe: user.TargetTimeframe,

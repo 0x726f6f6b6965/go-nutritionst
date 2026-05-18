@@ -18,14 +18,15 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Service) AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, mealInfo *gpt.MealInfoWithImage) error {
+func (s *Service) AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken *models.Usage, mealInfo *gpt.MealInfoWithImage) error {
 	// AI Analysis
 	start := time.Now()
 	aiResp, usage, err := s.gpt.GetMealInfo(ctx, mealInfo)
 	if usage > 0 {
 		if err := s.store.UpsertUsage(ctx, &models.Usage{
-			LineID: userID,
-			Usage:  usedToken + usage,
+			LineID:    userID,
+			Usage:     usedToken.Usage + usage,
+			CreatedAt: usedToken.CreatedAt,
 		}); err != nil {
 			s.logger.Error("DB Error", zap.Error(err))
 		}
@@ -131,14 +132,15 @@ func getHistoryFromResp(userID string, uid uuid.UUID, mealInfo *gpt.MealInfoWith
 	return history
 }
 
-func (s *Service) AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, dailyInfo *gpt.DailyInfo) error {
+func (s *Service) AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID string, usedToken *models.Usage, dailyInfo *gpt.DailyInfo) error {
 	// AI Analysis
 	start := time.Now()
 	aiResp, usage, err := s.gpt.GetMealDailyInfo(ctx, dailyInfo)
 	if usage > 0 {
 		if err := s.store.UpsertUsage(ctx, &models.Usage{
-			LineID: userID,
-			Usage:  usedToken + usage,
+			LineID:    userID,
+			Usage:     usedToken.Usage + usage,
+			CreatedAt: usedToken.CreatedAt,
 		}); err != nil {
 			s.logger.Error("DB Error", zap.Error(err))
 		}
@@ -236,13 +238,14 @@ func getDailyHistoryFromResp(userID string, uid uuid.UUID, dailyInfo *gpt.DailyI
 	return history
 }
 
-func (s *Service) AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID string, usedToken int64, basicInfo *gpt.BasicUserInfo) error {
+func (s *Service) AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID string, usedToken *models.Usage, basicInfo *gpt.BasicUserInfo) error {
 	// AI Analysis
 	aiResp, usage, err := s.gpt.GetTargetSuggestion(ctx, basicInfo)
 	if usage > 0 {
 		if err := s.store.UpsertUsage(ctx, &models.Usage{
-			LineID: userID,
-			Usage:  usedToken + usage,
+			LineID:    userID,
+			Usage:     usedToken.Usage + usage,
+			CreatedAt: usedToken.CreatedAt,
 		}); err != nil {
 			s.logger.Error("DB Error", zap.Error(err))
 		}
