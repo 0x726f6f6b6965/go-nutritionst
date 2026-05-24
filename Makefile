@@ -27,7 +27,7 @@ delete-menu:
 
 .PHONY: service-up
 service-up: build
-	@export POSTGRES_DB=postgres && \
+	@export POSTGRES_DB=nutritionist && \
 	export POSTGRES_USER=postgres && \
 	export POSTGRES_PASSWORD=docker && \
 	export POSTGRES_PORT=5432 && \
