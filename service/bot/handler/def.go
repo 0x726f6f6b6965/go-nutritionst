@@ -136,6 +136,7 @@ const (
 	DescriptionMsgWelcomeSignUp           DescriptionMsg = "歡迎使用營養師機器人，請依序輸入您的身高(公分)、體重(公斤)、年齡、性別(男/女)以完成註冊"
 	DescriptionMsgUploadMeal              DescriptionMsg = "上傳餐點"
 	DescriptionMsgUploadMealIntro         DescriptionMsg = "請點擊下方選單開始上傳餐點"
+	DescriptionMsgStartUse                DescriptionMsg = "歡迎開始使用營養紀錄助理!\n我會協助你記錄每天的飲食、飲水量、睡眠與體重,並根據你的目標整理每日飲食報告,幫助你更清楚掌握熱量、蛋白質與營養狀況。\n你可以先從以下幾件事開始:\n1.上傳餐點照片\n點選「上傳餐點」,拍下早餐、午餐、晚餐或點心,我會協助分析餐點內容與營養估算。 \n2.記錄飲水量\n每天記得回報飲水狀況,幫助我追蹤你的水分攝取是否足夠。\n 3.記錄睡眠與體重\n早上可以填寫睡眠時間與今日體重,讓飲食建議更貼近你的身體狀態。 \n4.查看每日報告\n點選「每日報告」,可以查看今天的飲食總結、目標達成度與改善建議。 \n5.調整個人目標\n如果你的目標是減脂、增肌或維持體重,可以到「改變目標」更新設定。\n從今天開始,只要照常吃、照常記錄,我會幫你把每天的飲食狀況整理成容易理解的健康建議。\n先從記錄今天第一餐開始吧!"
 )
 
 func (m DescriptionMsg) String() string {

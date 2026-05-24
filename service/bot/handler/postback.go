@@ -415,19 +415,36 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 
 func (h *Handler) confirmTarget(ctx context.Context, userID string, replyToken string, datas []string) error {
 	if datas[0] == action.TargetSuggestionActionTypeKeepPlan.String() {
-		h.replyText(ctx, replyToken, DescriptionMsgNoProblem.String())
+		profile, err := h.lineClient.GetProfile(userID)
+		if err != nil {
+			h.logger.Error("Error getting profile", zap.Error(err))
+			return h.replyText(ctx, replyToken,
+				fmt.Sprintf("Hi,\n%s",
+					DescriptionMsgStartUse.String(),
+				),
+			)
+		}
+		return h.replyText(ctx, replyToken,
+			fmt.Sprintf("Hi %s,\n%s",
+				profile.DisplayName,
+				DescriptionMsgStartUse.String(),
+			),
+		)
 	}
 	if datas[0] == action.TargetSuggestionActionTypeChangePlan.String() {
 		if len(datas) < 3 {
+			h.logger.Error("Error parsing target suggestion", zap.Strings("datas", datas))
 			return h.replyText(ctx, replyToken, internalErrors.ErrInvalidTargetSuggestion.Error())
 		}
 
 		timeFrame, err := strconv.Atoi(datas[1])
 		if err != nil {
+			h.logger.Error("Error parsing target suggestion", zap.Error(err))
 			return h.replyText(ctx, replyToken, internalErrors.ErrInvalidTargetSuggestion.Error())
 		}
 		targetWeight, err := strconv.ParseFloat(datas[2], 64)
 		if err != nil {
+			h.logger.Error("Error parsing target suggestion", zap.Error(err))
 			return h.replyText(ctx, replyToken, internalErrors.ErrInvalidTargetSuggestion.Error())
 		}
 		updateVals := []storage.UpdateColumn{
@@ -444,8 +461,22 @@ func (h *Handler) confirmTarget(ctx context.Context, userID string, replyToken s
 			h.logger.Error("Error updating user", zap.Error(err))
 			return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 		}
-		return h.replyText(ctx, replyToken, DescriptionMsgSetUpSuccess.String())
+		profile, err := h.lineClient.GetProfile(userID)
+		if err != nil {
+			h.logger.Error("Error getting profile", zap.Error(err))
+			return h.replyText(ctx, replyToken,
+				fmt.Sprintf("Hi,\n%s",
+					DescriptionMsgStartUse.String(),
+				),
+			)
+		}
+		return h.replyText(ctx, replyToken,
+			fmt.Sprintf("Hi %s,\n%s",
+				profile.DisplayName,
+				DescriptionMsgStartUse.String(),
+			),
+		)
 	}
-
+	h.logger.Error("Invalid target suggestion", zap.Strings("datas", datas))
 	return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 }
