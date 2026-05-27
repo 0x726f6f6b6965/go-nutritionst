@@ -21,23 +21,26 @@ type NutritionAPI interface {
 }
 
 type Service struct {
-	store   *storage.Postgres
-	cache   *cache.UserContext
-	gpt     gpt.NutritionAPI
-	sendMsg func(_ context.Context, userID string, xLineRetryKey string, msg messaging_api.MessageInterface) error
-	logger  *zap.Logger
+	store      *storage.Postgres
+	cache      *cache.UserContext
+	gpt        gpt.NutritionAPI
+	lineClient *messaging_api.MessagingApiAPI
+	sendMsg    func(_ context.Context, userID string, xLineRetryKey string, msg messaging_api.MessageInterface) error
+	logger     *zap.Logger
 }
 
 func NewService(store *storage.Postgres,
 	cache *cache.UserContext,
 	gpt gpt.NutritionAPI,
+	lineClient *messaging_api.MessagingApiAPI,
 	sendMsg func(_ context.Context, userID string, xLineRetryKey string, msg messaging_api.MessageInterface) error,
 	logger *zap.Logger) *Service {
 	return &Service{
-		store:   store,
-		cache:   cache,
-		gpt:     gpt,
-		sendMsg: sendMsg,
-		logger:  logger,
+		store:      store,
+		cache:      cache,
+		gpt:        gpt,
+		lineClient: lineClient,
+		sendMsg:    sendMsg,
+		logger:     logger,
 	}
 }

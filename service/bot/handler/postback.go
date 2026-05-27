@@ -92,7 +92,7 @@ func (h *Handler) setMeal(ctx context.Context, userID string, replyToken string,
 		}
 		h.cache.SetMeal(userID, mealInt)
 		mealName := getMealName(mealInt)
-		return h.replyText(ctx, replyToken, fmt.Sprintf(DescriptionMsgAskSendMealName.String(), mealName))
+		return h.replyText(ctx, replyToken, fmt.Sprintf(template.DescriptionMsgAskSendMealName.String(), mealName))
 	}
 	return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 }
@@ -102,8 +102,8 @@ func (h *Handler) checkDescript(ctx context.Context, userID string, replyToken s
 		meal := h.cache.GetMeal(userID)
 		desc := h.cache.GetMealDescription(userID)
 		vars := []template.Variable{
-			{Name: DescriptionMsgMeal.String(), Value: getMealName(meal)},
-			{Name: DescriptionMsgMealName.String(), Value: desc},
+			{Name: template.DescriptionMsgMeal.String(), Value: getMealName(meal)},
+			{Name: template.DescriptionMsgMealName.String(), Value: desc},
 		}
 		msg := template.GetUploadMsg(vars)
 		return h.replyFlex(ctx, replyToken, "upload img", msg)
@@ -194,7 +194,7 @@ func (h *Handler) checkBasicInfo(ctx context.Context, userID string, replyToken 
 			}
 		}
 	}()
-	return h.replyText(ctx, replyToken, fmt.Sprintf("%s%s", DescriptionMsgSignUpSuccess.String(), DescriptionMsgAIAnalyze.String()))
+	return h.replyText(ctx, replyToken, fmt.Sprintf("%s%s", template.DescriptionMsgSignUpSuccess.String(), template.DescriptionMsgAIAnalyze.String()))
 }
 
 func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.User, replyToken string) error {
@@ -287,7 +287,7 @@ func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.U
 			}
 		}
 	}()
-	return h.replyText(ctx, replyToken, DescriptionMsgAIAnalyze.String())
+	return h.replyText(ctx, replyToken, template.DescriptionMsgAIAnalyze.String())
 }
 
 func (h *Handler) removeRegisterProcess(userID string) {
@@ -307,22 +307,22 @@ func (h *Handler) setting(ctx context.Context, replyToken string) error {
 
 func (h *Handler) changeTarget(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeSetTarget)
-	return h.replyText(ctx, replyToken, DescriptionMsgAskSetNewTargetWeight.String())
+	return h.replyText(ctx, replyToken, template.DescriptionMsgAskSetNewTargetWeight.String())
 }
 
 func (h *Handler) setWater(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordWater)
-	return h.replyText(ctx, replyToken, DescriptionMsgAskSendWater.String())
+	return h.replyText(ctx, replyToken, template.DescriptionMsgAskSendWater.String())
 }
 
 func (h *Handler) setSleep(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordSleep)
-	return h.replyText(ctx, replyToken, DescriptionMsgAskSendSleep.String())
+	return h.replyText(ctx, replyToken, template.DescriptionMsgAskSendSleep.String())
 }
 
 func (h *Handler) setWeight(ctx context.Context, userID string, replyToken string) error {
 	h.cache.SetTextMessageActionType(userID, action.TextMessageActionTypeRecordWeight)
-	return h.replyText(ctx, replyToken, DescriptionMsgAskSendWeight.String())
+	return h.replyText(ctx, replyToken, template.DescriptionMsgAskSendWeight.String())
 }
 
 func (h *Handler) changePushMsg(ctx context.Context, replyToken string) error {
@@ -357,9 +357,9 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.MorningMsgSent,
 		})
 		if user.MorningMsgSent {
-			result = DescriptionMsgOpen.String()
+			result = template.DescriptionMsgOpen.String()
 		} else {
-			result = DescriptionMsgClose.String()
+			result = template.DescriptionMsgClose.String()
 		}
 	case pushMsg.MsgTypeEvening:
 		user.EveningMsgSent = !user.EveningMsgSent
@@ -368,9 +368,9 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.EveningMsgSent,
 		})
 		if user.EveningMsgSent {
-			result = DescriptionMsgOpen.String()
+			result = template.DescriptionMsgOpen.String()
 		} else {
-			result = DescriptionMsgClose.String()
+			result = template.DescriptionMsgClose.String()
 		}
 	case pushMsg.MsgTypeBreakfast:
 		user.BreakfastMsgSent = !user.BreakfastMsgSent
@@ -379,9 +379,9 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.BreakfastMsgSent,
 		})
 		if user.BreakfastMsgSent {
-			result = DescriptionMsgOpen.String()
+			result = template.DescriptionMsgOpen.String()
 		} else {
-			result = DescriptionMsgClose.String()
+			result = template.DescriptionMsgClose.String()
 		}
 	case pushMsg.MsgTypeLunch:
 		user.LunchMsgSent = !user.LunchMsgSent
@@ -390,9 +390,9 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.LunchMsgSent,
 		})
 		if user.LunchMsgSent {
-			result = DescriptionMsgOpen.String()
+			result = template.DescriptionMsgOpen.String()
 		} else {
-			result = DescriptionMsgClose.String()
+			result = template.DescriptionMsgClose.String()
 		}
 	case pushMsg.MsgTypeDinner:
 		user.DinnerMsgSent = !user.DinnerMsgSent
@@ -401,16 +401,16 @@ func (h *Handler) setPushMsg(ctx context.Context, userID string, replyToken stri
 			Value:      user.DinnerMsgSent,
 		})
 		if user.DinnerMsgSent {
-			result = DescriptionMsgOpen.String()
+			result = template.DescriptionMsgOpen.String()
 		} else {
-			result = DescriptionMsgClose.String()
+			result = template.DescriptionMsgClose.String()
 		}
 	}
 	if err := h.store.UpdateUser(ctx, userID, updateVals...); err != nil {
 		h.logger.Error("Error updating user", zap.Error(err))
 		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
-	return h.replyText(ctx, replyToken, fmt.Sprintf(DescriptionMsgUpdateAlermSuccess.String(), typ.ChineseString(), result))
+	return h.replyText(ctx, replyToken, fmt.Sprintf(template.DescriptionMsgUpdateAlermSuccess.String(), typ.ChineseString(), result))
 }
 
 func (h *Handler) confirmTarget(ctx context.Context, userID string, replyToken string, datas []string) error {
@@ -420,14 +420,14 @@ func (h *Handler) confirmTarget(ctx context.Context, userID string, replyToken s
 			h.logger.Error("Error getting profile", zap.Error(err))
 			return h.replyText(ctx, replyToken,
 				fmt.Sprintf("Hi,\n%s",
-					DescriptionMsgStartUse.String(),
+					template.DescriptionMsgStartUse.String(),
 				),
 			)
 		}
 		return h.replyText(ctx, replyToken,
 			fmt.Sprintf("Hi %s,\n%s",
 				profile.DisplayName,
-				DescriptionMsgStartUse.String(),
+				template.DescriptionMsgStartUse.String(),
 			),
 		)
 	}
@@ -466,14 +466,14 @@ func (h *Handler) confirmTarget(ctx context.Context, userID string, replyToken s
 			h.logger.Error("Error getting profile", zap.Error(err))
 			return h.replyText(ctx, replyToken,
 				fmt.Sprintf("Hi,\n%s",
-					DescriptionMsgStartUse.String(),
+					template.DescriptionMsgStartUse.String(),
 				),
 			)
 		}
 		return h.replyText(ctx, replyToken,
 			fmt.Sprintf("Hi %s,\n%s",
 				profile.DisplayName,
-				DescriptionMsgStartUse.String(),
+				template.DescriptionMsgStartUse.String(),
 			),
 		)
 	}

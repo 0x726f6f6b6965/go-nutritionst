@@ -51,7 +51,7 @@ func (h *Handler) HandleTextMessage(ctx context.Context, event *linebot.Event, m
 		// Registered user: Meal Logic
 		meal := h.cache.GetMeal(userID)
 		if meal == 0 {
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgUploadMealIntro.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgUploadMealIntro.String())
 		}
 
 		h.cache.SetMealDescription(userID, text)
@@ -59,10 +59,10 @@ func (h *Handler) HandleTextMessage(ctx context.Context, event *linebot.Event, m
 		mealName := getMealName(meal)
 
 		vars := []template.Variable{
-			{Name: DescriptionMsgMeal.String(), Value: mealName},
-			{Name: DescriptionMsgMealName.String(), Value: text},
+			{Name: template.DescriptionMsgMeal.String(), Value: mealName},
+			{Name: template.DescriptionMsgMealName.String(), Value: text},
 		}
-		msg := template.GetCheckMsg(DescriptionMsgUploadMeal.String(),
+		msg := template.GetCheckMsg(template.DescriptionMsgUploadMeal.String(),
 			vars,
 			[]string{fmt.Sprintf("action=%s&data=y", action.ActionTypeCheckDescript.String()),
 				fmt.Sprintf("action=%s&data=n", action.ActionTypeCheckDescript.String())})
@@ -76,82 +76,82 @@ func (h *Handler) addUserProcess(ctx context.Context, event *linebot.Event, text
 
 	if !h.cache.GetRegisterProcess(userID) {
 		h.cache.SetRegisterProcess(userID, true)
-		return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("%s\n\n%s", DescriptionMsgWelcomeSignUp.String(), DescriptionMsgAskHeight.String()))
+		return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("%s\n\n%s", template.DescriptionMsgWelcomeSignUp.String(), template.DescriptionMsgAskHeight.String()))
 	}
 
 	if h.cache.GetHeight(userID) == 0 {
 		height, err := strconv.ParseFloat(text, 64)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgHeightFormatError.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgHeightFormatError.String())
 		}
 		h.cache.SetHeight(userID, height)
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskWeight.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgAskWeight.String())
 	}
 
 	if h.cache.GetWeight(userID) == 0 {
 		w, err := strconv.ParseFloat(text, 64)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgWeightFormatError.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgWeightFormatError.String())
 		}
 		h.cache.SetWeight(userID, w)
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskAge.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgAskAge.String())
 	}
 
 	if h.cache.GetAge(userID) == 0 {
 		a, err := strconv.Atoi(text)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgAgeFormatError.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgAgeFormatError.String())
 		}
 		h.cache.SetAge(userID, a)
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskSetTargetWeight.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgAskSetTargetWeight.String())
 	}
 
 	if h.cache.GetTargetWeight(userID) == 0 {
 		tw, err := strconv.ParseFloat(text, 64)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgTargetWeightFormatError.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgTargetWeightFormatError.String())
 		}
 		h.cache.SetTargetWeight(userID, tw)
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskSetTargetTime.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgAskSetTargetTime.String())
 	}
 
 	if h.cache.GetTargetTimeframe(userID) == 0 {
 		ttf, err := strconv.Atoi(text)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgTargetTimeFormatError.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgTargetTimeFormatError.String())
 		}
 		h.cache.SetTargetTimeframe(userID, ttf)
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskSetGender.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgAskSetGender.String())
 	}
 
 	if h.cache.GetGender(userID) == 0 {
 		t := strings.TrimSpace(text)
 		var g models.Gender
 		switch t {
-		case DescriptionMsgMale.String():
+		case template.DescriptionMsgMale.String():
 			g = models.GenderMale
-		case DescriptionMsgFemale.String():
+		case template.DescriptionMsgFemale.String():
 			g = models.GenderFemale
 		default:
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgGenderFormatError.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgGenderFormatError.String())
 		}
 		h.cache.SetGender(userID, int(g))
 
 		// Confirm Msg
-		genderStr := DescriptionMsgMale.String()
+		genderStr := template.DescriptionMsgMale.String()
 		if g == models.GenderFemale {
-			genderStr = DescriptionMsgFemale.String()
+			genderStr = template.DescriptionMsgFemale.String()
 		}
 
 		vars := []template.Variable{
-			{Name: DescriptionMsgGender.String(), Value: genderStr},
-			{Name: DescriptionMsgHeight.String(), Value: fmt.Sprintf("%.1f 公分", h.cache.GetHeight(userID))},
-			{Name: DescriptionMsgWeight.String(), Value: fmt.Sprintf("%.1f 公斤", h.cache.GetWeight(userID))},
-			{Name: DescriptionMsgAge.String(), Value: fmt.Sprintf("%d 歲", h.cache.GetAge(userID))},
-			{Name: DescriptionMsgTargetWeight.String(), Value: fmt.Sprintf("%.1f 公斤", h.cache.GetTargetWeight(userID))},
-			{Name: DescriptionMsgTargetTime.String(), Value: fmt.Sprintf("%d 個月", h.cache.GetTargetTimeframe(userID))},
+			{Name: template.DescriptionMsgGender.String(), Value: genderStr},
+			{Name: template.DescriptionMsgHeight.String(), Value: fmt.Sprintf("%.1f 公分", h.cache.GetHeight(userID))},
+			{Name: template.DescriptionMsgWeight.String(), Value: fmt.Sprintf("%.1f 公斤", h.cache.GetWeight(userID))},
+			{Name: template.DescriptionMsgAge.String(), Value: fmt.Sprintf("%d 歲", h.cache.GetAge(userID))},
+			{Name: template.DescriptionMsgTargetWeight.String(), Value: fmt.Sprintf("%.1f 公斤", h.cache.GetTargetWeight(userID))},
+			{Name: template.DescriptionMsgTargetTime.String(), Value: fmt.Sprintf("%d 個月", h.cache.GetTargetTimeframe(userID))},
 		}
-		msg := template.GetCheckMsg(DescriptionMsgBasicInfo.String(), vars, []string{"action=check_basic_info&data=y", "action=check_basic_info&data=n"})
+		msg := template.GetCheckMsg(template.DescriptionMsgBasicInfo.String(), vars, []string{"action=check_basic_info&data=y", "action=check_basic_info&data=n"})
 		return h.replyFlex(ctx, event.ReplyToken, "basic info", msg)
 	}
 
@@ -168,15 +168,15 @@ func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.
 	if h.cache.GetTargetWeight(userID) == 0 {
 		tw, err = strconv.ParseFloat(text, 64)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgTargetWeightFormatError.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgTargetWeightFormatError.String())
 		}
 		h.cache.SetTargetWeight(userID, tw)
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgAskSetTargetTime.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgAskSetTargetTime.String())
 	}
 	if h.cache.GetTargetTimeframe(userID) == 0 {
 		ttf, err = strconv.Atoi(text)
 		if err != nil {
-			return h.replyText(ctx, event.ReplyToken, DescriptionMsgTargetTimeFormatError.String())
+			return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgTargetTimeFormatError.String())
 		}
 	}
 	tw = h.cache.GetTargetWeight(userID)
@@ -230,13 +230,13 @@ func (h *Handler) changeTargetWeightProcess(ctx context.Context, event *linebot.
 			}
 		}
 	}()
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("%s%s", fmt.Sprintf(DescriptionMsgTargetWeightUpdate.String(), tw, ttf), DescriptionMsgAIAnalyze.String()))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf("%s%s", fmt.Sprintf(template.DescriptionMsgTargetWeightUpdate.String(), tw, ttf), template.DescriptionMsgAIAnalyze.String()))
 }
 
 func (h *Handler) recordWaterProcess(ctx context.Context, event *linebot.Event, text string) error {
 	water, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgWaterFormatError.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgWaterFormatError.String())
 	}
 	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
 	date := timezone.GetTaipeiDate()
@@ -266,13 +266,13 @@ func (h *Handler) recordWaterProcess(ctx context.Context, event *linebot.Event, 
 		}
 	}
 
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(DescriptionMsgWaterUpdate.String(), water))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(template.DescriptionMsgWaterUpdate.String(), water))
 }
 
 func (h *Handler) recordSleepProcess(ctx context.Context, event *linebot.Event, text string) error {
 	sleep, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgSleepFormatError.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgSleepFormatError.String())
 	}
 	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
 	date := timezone.GetTaipeiDate()
@@ -302,18 +302,18 @@ func (h *Handler) recordSleepProcess(ctx context.Context, event *linebot.Event, 
 		}
 	}
 
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(DescriptionMsgSleepUpdate.String(), sleep))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(template.DescriptionMsgSleepUpdate.String(), sleep))
 }
 
 func (h *Handler) recordWeightProcess(ctx context.Context, event *linebot.Event, text string) error {
 	w, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		return h.replyText(ctx, event.ReplyToken, DescriptionMsgWeightFormatError.String())
+		return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgWeightFormatError.String())
 	}
 	defer h.cache.SetTextMessageActionType(event.Source.UserID, action.TextMessageActionTypeUnknown)
 	if err := h.store.UpdateUserWeight(ctx, event.Source.UserID, w); err != nil {
 		h.logger.Error("Error updating weight", zap.Error(err))
 		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
 	}
-	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(DescriptionMsgWeightUpdate.String(), w))
+	return h.replyText(ctx, event.ReplyToken, fmt.Sprintf(template.DescriptionMsgWeightUpdate.String(), w))
 }

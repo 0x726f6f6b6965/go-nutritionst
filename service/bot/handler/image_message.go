@@ -108,5 +108,5 @@ func (h *Handler) HandleImageMessage(ctx context.Context, event *linebot.Event, 
 			}
 		}
 	}()
-	return h.replyText(ctx, event.ReplyToken, DescriptionMsgAIAnalyze.String())
+	return h.replyText(ctx, event.ReplyToken, template.DescriptionMsgAIAnalyze.String())
 }

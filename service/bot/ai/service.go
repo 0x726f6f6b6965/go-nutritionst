@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -271,6 +272,35 @@ func (s *Service) AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID st
 			s.logger.Error("Error sending message", zap.Error(err))
 			return err
 		}
+		subUid := uuid.New()
+		if err := s.store.CreateSendRequest(ctx, &models.SendRequest{
+			RequestID:   subUid.String(),
+			RequestType: models.SendRequestTypeBasicInfo,
+			LineID:      userID,
+			Status:      models.SendRequestStatusPending,
+		}); err != nil {
+			s.logger.Error("Error creating send request", zap.Error(err))
+			return err
+		}
+		if err := s.sendStartMsg(ctx, userID, subUid.String()); err != nil {
+			s.logger.Error("Error sending message", zap.Error(err))
+			if sendErr := s.store.UpdateSendRequest(ctx, subUid.String(), storage.UpdateColumn{
+				ColumnName: storage.SendRequestStatus,
+				Value:      models.SendRequestStatusFailed,
+			}, storage.UpdateColumn{
+				ColumnName: storage.SendRequestFailReason,
+				Value:      err.Error(),
+			}); sendErr != nil {
+				s.logger.Error("Error updating send request", zap.Error(sendErr))
+			}
+			return err
+		}
+		if err := s.store.UpdateSendRequest(ctx, subUid.String(), storage.UpdateColumn{
+			ColumnName: storage.SendRequestStatus,
+			Value:      models.SendRequestStatusSuccess,
+		}); err != nil {
+			s.logger.Error("UpdateSendRequest error", zap.Error(err))
+		}
 	} else {
 		respMsg := template.GetTargetMsg(aiResp, basicInfo.TargetWeight, basicInfo.TargetTimeframe)
 		msg := messaging_api.FlexMessage{
@@ -287,6 +317,31 @@ func (s *Service) AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID st
 		Value:      models.SendRequestStatusSuccess,
 	}); err != nil {
 		s.logger.Error("UpdateSendRequest error", zap.Error(err))
+	}
+	return nil
+}
+
+func (s *Service) sendStartMsg(ctx context.Context, userID string, uid string) error {
+	var startMsg messaging_api.TextMessage
+	profile, err := s.lineClient.GetProfile(userID)
+	if err != nil {
+		s.logger.Error("Error getting profile", zap.Error(err))
+		startMsg = messaging_api.TextMessage{
+			Text: fmt.Sprintf("Hi,\n%s",
+				template.DescriptionMsgStartUse.String(),
+			),
+		}
+	} else {
+		startMsg = messaging_api.TextMessage{
+			Text: fmt.Sprintf("Hi %s,\n%s",
+				profile.DisplayName,
+				template.DescriptionMsgStartUse.String(),
+			),
+		}
+	}
+	if err := s.sendMsg(ctx, userID, uid, startMsg); err != nil {
+		s.logger.Error("Error sending message", zap.Error(err))
+		return err
 	}
 	return nil
 }

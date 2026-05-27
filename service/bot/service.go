@@ -51,7 +51,7 @@ func NewService(channelToken string, store *storage.Postgres, gpt gpt.NutritionA
 			return nil, err
 		}
 	}
-	aiAPI := ai.NewService(s.store, s.cache, gpt, s.sendMsg, s.logger)
+	aiAPI := ai.NewService(s.store, s.cache, gpt, s.lineClient, s.sendMsg, s.logger)
 	handler := handler.NewHandler(s.store,
 		s.cache,
 		s.lineClient,
