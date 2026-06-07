@@ -83,7 +83,8 @@ CREATE TABLE IF NOT EXISTS send_requests (
 CREATE TABLE IF NOT EXISTS used_tokens (
     id BIGSERIAL PRIMARY KEY,
     line_id TEXT UNIQUE,
-    used_token BIGINT,
+    used_token BIGINT DEFAULT 0,
+    last_used_date TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_used_tokens_line_id FOREIGN KEY (line_id) REFERENCES users (line_id) ON DELETE CASCADE

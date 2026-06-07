@@ -85,9 +85,13 @@ func (h *Handler) HandleImageMessage(ctx context.Context, event *linebot.Event, 
 			CreatedAt: time.Now(),
 		}
 	}
-	if time.Since(usedToken.CreatedAt) > 24*time.Hour {
+	lastDate, err := usedToken.GetLastUsedDate()
+	if err != nil {
+		h.logger.Error("Error getting last used date", zap.Error(err))
+		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrInternal.Error())
+	}
+	if time.Since(lastDate) > 24*time.Hour {
 		usedToken.Usage = 0
-		usedToken.CreatedAt = time.Now()
 	}
 	if usedToken.Usage >= h.maxDailyToken {
 		return h.replyText(ctx, event.ReplyToken, internalErrors.ErrOutOfDailyToken.Error())

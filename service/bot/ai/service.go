@@ -23,14 +23,9 @@ func (s *Service) AnalyzeMeal(ctx context.Context, uid uuid.UUID, userID string,
 	// AI Analysis
 	start := time.Now()
 	aiResp, usage, err := s.gpt.GetMealInfo(ctx, mealInfo)
-	if usage > 0 {
-		if err := s.store.UpsertUsage(ctx, &models.Usage{
-			LineID:    userID,
-			Usage:     usedToken.Usage + usage,
-			CreatedAt: usedToken.CreatedAt,
-		}); err != nil {
-			s.logger.Error("DB Error", zap.Error(err))
-		}
+	if err := s.updateUsage(ctx, userID, usedToken, usage); err != nil {
+		s.logger.Error("Error updating usage", zap.Error(err))
+		return err
 	}
 	if err != nil {
 		s.logger.Error("AI Error", zap.Error(err))
@@ -137,14 +132,9 @@ func (s *Service) AnalyzeDailyMeal(ctx context.Context, uid uuid.UUID, userID st
 	// AI Analysis
 	start := time.Now()
 	aiResp, usage, err := s.gpt.GetMealDailyInfo(ctx, dailyInfo)
-	if usage > 0 {
-		if err := s.store.UpsertUsage(ctx, &models.Usage{
-			LineID:    userID,
-			Usage:     usedToken.Usage + usage,
-			CreatedAt: usedToken.CreatedAt,
-		}); err != nil {
-			s.logger.Error("DB Error", zap.Error(err))
-		}
+	if err := s.updateUsage(ctx, userID, usedToken, usage); err != nil {
+		s.logger.Error("Error updating usage", zap.Error(err))
+		return err
 	}
 	if err != nil {
 		s.logger.Error("AI Error", zap.Error(err))
@@ -242,14 +232,9 @@ func getDailyHistoryFromResp(userID string, uid uuid.UUID, dailyInfo *gpt.DailyI
 func (s *Service) AnalyzeBasicInfo(ctx context.Context, uid uuid.UUID, userID string, usedToken *models.Usage, basicInfo *gpt.BasicUserInfo) error {
 	// AI Analysis
 	aiResp, usage, err := s.gpt.GetTargetSuggestion(ctx, basicInfo)
-	if usage > 0 {
-		if err := s.store.UpsertUsage(ctx, &models.Usage{
-			LineID:    userID,
-			Usage:     usedToken.Usage + usage,
-			CreatedAt: usedToken.CreatedAt,
-		}); err != nil {
-			s.logger.Error("DB Error", zap.Error(err))
-		}
+	if err := s.updateUsage(ctx, userID, usedToken, usage); err != nil {
+		s.logger.Error("Error updating usage", zap.Error(err))
+		return err
 	}
 	if err != nil {
 		s.logger.Error("AI Error", zap.Error(err))
@@ -342,6 +327,19 @@ func (s *Service) sendStartMsg(ctx context.Context, userID string, uid string) e
 	if err := s.sendMsg(ctx, userID, uid, startMsg); err != nil {
 		s.logger.Error("Error sending message", zap.Error(err))
 		return err
+	}
+	return nil
+}
+
+func (s *Service) updateUsage(ctx context.Context, uid string, usedToken *models.Usage, usage int64) error {
+	if usage > 0 {
+		if err := s.store.UpsertUsage(ctx, &models.Usage{
+			LineID:       uid,
+			Usage:        usedToken.Usage + usage,
+			LastUsedDate: timezone.GetTaipeiDate(),
+		}); err != nil {
+			s.logger.Error("DB Error", zap.Error(err))
+		}
 	}
 	return nil
 }

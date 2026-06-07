@@ -254,9 +254,13 @@ func (h *Handler) dailyReport(ctx context.Context, userID string, user *models.U
 		h.logger.Error("Error getting usage", zap.Error(err))
 		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
 	}
-	if time.Since(usedToken.CreatedAt) > 24*time.Hour {
+	lastDate, err := usedToken.GetLastUsedDate()
+	if err != nil {
+		h.logger.Error("Error getting last used date", zap.Error(err))
+		return h.replyText(ctx, replyToken, internalErrors.ErrInternal.Error())
+	}
+	if time.Since(lastDate) > 24*time.Hour {
 		usedToken.Usage = 0
-		usedToken.CreatedAt = time.Now()
 	}
 	if usedToken.Usage >= h.maxDailyToken {
 		return h.replyText(ctx, replyToken, internalErrors.ErrOutOfDailyToken.Error())
