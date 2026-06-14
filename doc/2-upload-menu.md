@@ -21,5 +21,5 @@ CHANNEL_SECRET="YOUR_CHANNEL_SECRET"
 
 ```bash
 # Upload menu
-make upload-menu
+make create-menu
 ```
