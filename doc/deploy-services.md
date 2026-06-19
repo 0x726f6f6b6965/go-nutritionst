@@ -1,12 +1,16 @@
-# Deploy
+# Deploy Services
 
-## Prepare Terraform Variables
+## 1. Prerequisites
 
-```bash
-touch ./deployment/infra/terraform.tfvars
-```
+- Install [Docker Desktop](https://docs.docker.com/desktop/)
+- Install [Google Cloud SDK (gcloud CLI)](https://cloud.google.com/sdk/docs/install).
+- Run the [build-images.md](./build-images.md) and [upload-images.md](./upload-images.md) to upload images first.
 
-## Variables
+---
+
+## 2. Prepare Terraform Variables
+
+- Create a terraform.tfvars file in the ./deployment/infra/directory and add the following variables:
 
 | variable             | description                                         | default                          |
 | -------------------- | --------------------------------------------------- | -------------------------------- |
@@ -34,9 +38,6 @@ touch ./deployment/infra/terraform.tfvars
 | breakfast_schedule   | Cron schedule for the breakfast message             | 0 10 * * *                       |
 | lunch_schedule       | Cron schedule for the lunch message                 | 0 13 * * *                       |
 | dinner_schedule      | Cron schedule for the dinner message                | 0 19 * * *                       |
-
-
-### Set Variables
 
 In `terraform.tfvars`, add the following variables:
 
@@ -66,25 +67,65 @@ lunch_schedule       = "0 13 * * *"
 dinner_schedule      = "0 19 * * *"
 ```
 
-## Run Deploy
+## 3. Run Deploy
+
+### Option A: Deploy via Docker (Recommended, no local Terraform/gcloud CLI installation needed)
+
+Before deploying, make sure you have generated Application Default Credentials on your local host machine:
 
 ```bash
-# 1. Login Google Cloud
-gcloud auth login
-
-# 2. Run Deploy
-make deploy
+gcloud auth application-default login
 ```
 
-- After deployment, you will get the public ip from terraform output.
-- You need to set the webhook url to Line OA. 
-- Example: `https://[IP_ADDRESS]/webhook`
+Then, run the deployment using the Makefile target:
 
-## Run Migration
+```bash
+make deploy-docker
+```
 
-- Copy `migrations/*.up.sql` and login to Cloud SQL to run migration.
+Or run Docker commands directly:
 
-## Line OA Configuration
+- **macOS/Linux**:
+  ```bash
+  # Build deploy image
+  docker build -t deploy-app -f ./deployment/infra/deploy.Dockerfile .
+
+  # Run deployment
+  docker run --rm \
+    -v ~/.config/gcloud:/root/.config/gcloud \
+    -v $(pwd):/workspace \
+    deploy-app sh -c "terraform init && terraform apply -var-file=terraform.tfvars -var service_name=go-nutritionst -auto-approve"
+  ```
+
+- **Windows (PowerShell)**:
+  ```powershell
+  # Build deploy image
+  docker build -t deploy-app -f ./deployment/infra/deploy.Dockerfile .
+
+  # Run deployment
+  docker run --rm `
+    -v ${HOME}/.config/gcloud:/root/.config/gcloud `
+    -v ${PWD}:/workspace `
+    deploy-app sh -c "terraform init && terraform apply -var-file=terraform.tfvars -var service_name=go-nutritionst -auto-approve"
+  ```
+
+### Option B: Local Deploy (Requires local Terraform & gcloud CLI)
+
+1. Login Google Cloud:
+   ```bash
+   gcloud auth login
+   ```
+
+2. Run Deploy:
+   ```bash
+   make deploy
+   ```
+
+- After deployment, you will get the public ip from terraform output. e.g. `cloud_run_service_url = "https://go-nutritionst-dbq2cf7oua-de.a.run.app"`
+
+## 4. Line OA Configuration
 
 1. Set Webhook URL
+   - Example: `https://[IP_ADDRESS]/callback`
+   ![alt text](./pic/webhook.png)
 
